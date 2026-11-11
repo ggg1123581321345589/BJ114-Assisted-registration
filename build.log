@@ -1,9 +1,0 @@
-[SOURCE] D:\抢号软件开发\辅助挂号软件v1.0.0_GitHub源码\
-**********************************************************************
-** Visual Studio 2022 Developer Command Prompt v17.14.0
-** Copyright (c) 2022 Microsoft Corporation
-**********************************************************************
-[vcvarsall.bat] Environment initialized for: 'x64'
-QMake version 3.1
-Using Qt version 5.15.2 in D:/Anaconda3/Library/lib
-	"D:\Visual Studio\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\nmake.exe" -f Makefile.Release

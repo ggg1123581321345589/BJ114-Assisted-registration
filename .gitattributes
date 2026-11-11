@@ -1,0 +1,20 @@
+* text=auto
+*.cpp text eol=lf
+*.h text eol=lf
+*.cjs text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+*.md text eol=lf
+*.pro text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.ico binary
+*.exe binary
+*.dll binary

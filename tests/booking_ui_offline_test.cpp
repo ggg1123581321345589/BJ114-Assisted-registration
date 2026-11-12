@@ -10,7 +10,7 @@ class BookingUiProbe {
 public:
  static QJsonObject run(const QString &root) {
   Window w(root,false);
-  QObject::disconnect(&w,&Window::work,w.worker_,&Worker::execute);
+  for(int slot=0;slot<16;++slot)if(w.queryWorkers_[slot])QObject::disconnect(&w,&Window::work,w.queryWorkers_[slot],&Worker::execute);
   w.show();QApplication::processEvents();
   QJsonArray checks,actions; int failed=0;
   auto check=[&](const QString &name,bool pass){QTextStream(stderr)<<"CHECK:"<<name<<":"<<pass<<Qt::endl;checks.append(QJsonObject{{"name",name},{"pass",pass}});if(!pass)++failed;};
@@ -31,7 +31,7 @@ public:
   w.bookingCompleted("booking_captcha",{{"status","failed"},{"logged_in",false},{"message","fixture-failed"}});check("failed_refresh_clears_old_image",!w.captchaLoaded_&&w.captchaImage_->pixmap()==nullptr&&!w.sendSms_->isEnabled()&&w.getCaptcha_->isEnabled());
   w.bookingCompleted("booking_captcha",{{"status","complete"},{"logged_in",false},{"captcha_b64","aW52YWxpZA=="}});check("bad_image_does_not_enable_sms",!w.captchaLoaded_&&!w.sendSms_->isEnabled());
   w.bookingCompleted("booking_captcha",captchaResult());w.imageCode_->setText("1234");QMetaObject::invokeMethod(&w.captchaExpiry_,"timeout",Qt::DirectConnection);check("captcha_expiry_invalidates_image",!w.captchaLoaded_&&w.imageCode_->text().isEmpty()&&!w.sendSms_->isEnabled());
-  w.bookingCompleted("booking_captcha",captchaResult());w.imageCode_->setText("1234");w.stop();check("stop_invalidates_captcha",!w.captchaLoaded_&&!w.captchaExpiry_.isActive()&&w.imageCode_->text().isEmpty());w.bookingCompleted("booking_captcha",captchaResult());check("late_captcha_after_stop_not_shown",!w.captchaLoaded_&&w.captchaImage_->pixmap()==nullptr);w.cancel_->store(false);w.bookingCompleted("booking_captcha",captchaResult());w.imageCode_->setText("1234");
+  w.bookingCompleted("booking_captcha",captchaResult());w.imageCode_->setText("1234");w.stop();{QElapsedTimer reset;reset.start();while(w.poolResetting()&&reset.elapsed()<5000){QApplication::processEvents();QThread::msleep(2);}}check("stop_invalidates_captcha",!w.captchaLoaded_&&!w.captchaExpiry_.isActive()&&w.imageCode_->text().isEmpty());w.bookingCompleted("booking_captcha",captchaResult());check("late_captcha_after_stop_not_shown",!w.captchaLoaded_&&w.captchaImage_->pixmap()==nullptr);w.cancel_->store(false);w.bookingCompleted("booking_captcha",captchaResult());w.imageCode_->setText("1234");
   const int beforeSms=actions.size();w.bookingAction("booking_sms",{{"phone","13800000000"},{"captcha","1234"}});
   check("action_captured_without_worker_dispatch",actions.size()==beforeSms+1);check("sms_consumes_captcha_image",!w.captchaLoaded_&&w.imageCode_->text().isEmpty()&&!w.captchaExpiry_.isActive());
   if(!actions.isEmpty()){auto a=actions.last().toObject();check("sms_action_preserves_operation",a.value("op")==QJsonValue("booking_sms"));check("sms_action_preserves_payload",a.value("params").toObject().value("phone")==QJsonValue("13800000000"));}
@@ -124,16 +124,16 @@ public:
   setRow(row);selectPatientCard();
   w.bookingCompleted("booking_logout",{{"status","complete"},{"logged_in",false}});
   check("logout_clears_state",!w.loggedIn_&&w.bookingPreviewId_.isEmpty());check("logout_clears_patients_codes",w.bookingPatients_.isEmpty()&&w.smsCode_->text().isEmpty()&&w.imageCode_->text().isEmpty());check("logout_disables_direct",!w.submitBooking_->isEnabled());
-  w.thread_.quit();w.thread_.wait(10000);
+  w.close();QElapsedTimer cleanup;cleanup.start();while(w.queryOwnersRunning()&&cleanup.elapsed()<10000){QApplication::processEvents();QThread::msleep(2);}
   return {{"status",failed?"FAIL":"PASS"},{"checks",checks},{"failed",failed},{"captured_actions",actions},{"scheduled_ui_observation",scheduledObservation},{"website_requests",0},{"worker_execute_disconnected",true}};
  }
 };
 class UiProbe {public:static int captureCleanPanel(const QString &root,const QString &out){
- Window w(root,false);QObject::disconnect(&w,&Window::work,w.worker_,&Worker::execute);QJsonArray work;QObject::connect(&w,&Window::work,&w,[&](const QString&o,QJsonObject){work.append(o);});
+ Window w(root,false);for(int slot=0;slot<16;++slot)if(w.queryWorkers_[slot])QObject::disconnect(&w,&Window::work,w.queryWorkers_[slot],&Worker::execute);QJsonArray work;QObject::connect(&w,&Window::work,&w,[&](const QString&o,QJsonObject){work.append(o);});
  w.autoLoad_->setChecked(false);w.debounce_.stop();w.resize(1250,1100);w.show();QApplication::processEvents();
  for(auto*scroll:w.findChildren<QScrollArea*>()){scroll->verticalScrollBar()->setValue(scroll->verticalScrollBar()->maximum());}QApplication::processEvents();
  QGroupBox *panel=nullptr;for(auto*g:w.findChildren<QGroupBox*>())if(g->isAncestorOf(w.submitBooking_))panel=g;
  const bool saved=panel&&panel->grab().save(out);QJsonObject result{{"status",saved?"PASS":"FAIL"},{"screenshot",out},{"phone_empty",w.phone_->text().isEmpty()},{"logged_in",w.loggedIn_},{"patient",w.patient_->currentText()},{"card",w.card_->currentText()},{"direct_button_text",w.submitBooking_->text()},{"summary",w.bookingSummary_->text()},{"work_operations",work},{"network_requests",0}};
- w.thread_.quit();w.thread_.wait(10000);QTextStream(stdout)<<QJsonDocument(result).toJson(QJsonDocument::Indented);return saved&&work.isEmpty()&&w.phone_->text().isEmpty()?0:1;
+ w.close();QElapsedTimer cleanup;cleanup.start();while(w.queryOwnersRunning()&&cleanup.elapsed()<10000){QApplication::processEvents();QThread::msleep(2);}QTextStream(stdout)<<QJsonDocument(result).toJson(QJsonDocument::Indented);return saved&&work.isEmpty()&&w.phone_->text().isEmpty()?0:1;
  }};
 int main(int argc,char **argv){if(qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))qputenv("QT_QPA_PLATFORM","windows");QApplication app(argc,argv);if(app.arguments().contains("--clean-panel"))return UiProbe::captureCleanPanel(app.arguments().at(1),QDir(QCoreApplication::applicationDirPath()).filePath("BOOKING_PANEL_REMOVED.png"));QString root=app.arguments().size()>1?app.arguments().at(1):QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("..");auto result=BookingUiProbe::run(root);const auto bytes=QJsonDocument(result).toJson(QJsonDocument::Compact);fwrite(bytes.constData(),1,bytes.size(),stdout);return result.value("status")==QJsonValue("PASS")?0:1;}

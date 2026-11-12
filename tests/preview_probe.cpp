@@ -8,7 +8,7 @@ class UiProbe {
 public:
  static QJsonObject run(const QString &root,const QString &out){
   Window w(root,false);
-  const bool disconnected=QObject::disconnect(&w,&Window::work,w.worker_,&Worker::execute);
+  bool disconnected=true;int disconnectedWorkers=0;for(int slot=0;slot<16;++slot)if(w.queryWorkers_[slot]){disconnected=QObject::disconnect(&w,&Window::work,w.queryWorkers_[slot],&Worker::execute)&&disconnected;++disconnectedWorkers;}
   QJsonArray work,checks;int failed=0;
   auto check=[&](const char *name,bool pass){checks.append(QJsonObject{{"name",QString::fromLatin1(name)},{"pass",pass}});if(!pass)++failed;};
   QObject::connect(&w,&Window::work,&w,[&](const QString &op,const QJsonObject &){work.append(op);},Qt::DirectConnection);
@@ -19,8 +19,8 @@ public:
   auto *first=scroll&&scroll->widget()&&scroll->widget()->layout()?qobject_cast<QLabel*>(scroll->widget()->layout()->itemAt(0)->widget()):nullptr;
   check("real_window_visible",w.isVisible());
   check("public_hospital_catalog_loaded",w.hospitals_->rowCount()==308);
-  check("worker_execution_disconnected",disconnected);
-  check("title_exact_v1_1_0",w.windowTitle()==QString::fromUtf8("辅助挂号软件 v1.1.0"));
+  check("worker_execution_disconnected",disconnected&&disconnectedWorkers==w.queryConnectionCount_);
+  check("title_exact_v1_1_1",w.windowTitle()==QString::fromUtf8("辅助挂号软件 v1.1.1"));
   check("first_line_is_disclaimer_agreement",first&&first->text()==QString::fromUtf8("免责协议"));
   check("disclaimer_named_label_visible",body&&body->isVisible()&&body->wordWrap()&&body->textFormat()==Qt::PlainText);
   check("disclaimer_has_manual_confirmation_and_official_result",body&&body->text().contains(QString::fromUtf8("人工确认"))&&body->text().contains(QString::fromUtf8("官方平台为准")));
@@ -34,6 +34,9 @@ public:
   check("logged_out_with_no_patients",!w.loggedIn_&&w.bookingPatients_.isEmpty());
   check("manual_booking_button_exists",w.submitBooking_&&!w.submitBooking_->isHidden()&&w.submitBooking_->text().contains(QString::fromUtf8("直接挂号")));
   check("manual_booking_initially_disabled",!w.submitBooking_->isEnabled());
+  check("connection_threads_default_and_range",w.connectionThreads_->value()==7&&w.connectionThreads_->minimum()==1&&w.connectionThreads_->maximum()==16);
+  check("pool_recovery_idle_before_selection",!w.poolRecoveryEnabled_&&w.poolRecoveryTimer_.isActive());
+  check("query_time_beijing_display",queryTimeForDisplay("2026-11-12T03:00:00.000Z")==QStringLiteral("2026-11-12 11:00:00"));
   int scheduledButtons=0,scheduledLabels=0;
   for(auto *b:w.findChildren<QPushButton*>())if(b->text().contains(QString::fromUtf8("定时")))++scheduledButtons;
   for(auto *l:w.findChildren<QLabel*>())if(l->text().contains(QString::fromUtf8("执行时间（本机）"))||l->text().contains(QString::fromUtf8("到点自动")))++scheduledLabels;
@@ -45,8 +48,8 @@ public:
   const int bottom=body?body->mapTo(&w,QPoint(0,body->height())).y()+12:0;
   check("disclaimer_screenshot_saved",body&&bottom>0&&w.grab(QRect(0,0,w.width(),qMin(bottom,w.height()))).save(top));
   const QString title=w.windowTitle(),firstText=first?first->text():QString(),bodyText=body?body->text():QString();
-  w.close();QElapsedTimer timer;timer.start();while(w.thread_.isRunning()&&timer.elapsed()<10000){QApplication::processEvents();QThread::msleep(2);}
-  check("worker_shutdown_complete",!w.thread_.isRunning());check("no_work_on_shutdown",work.isEmpty());
+  w.close();QElapsedTimer timer;timer.start();while(w.queryOwnersRunning()&&timer.elapsed()<10000){QApplication::processEvents();QThread::msleep(2);}
+  check("worker_shutdown_complete",!w.queryOwnersRunning());check("no_work_on_shutdown",work.isEmpty());
   return {{"status",failed?"FAIL":"PASS"},{"checks",checks},{"count",checks.size()},{"failed",failed},{"project_root",root},{"window_title",title},{"first_line",firstText},{"disclaimer",bodyText},{"work_operations",work},{"website_requests",0},{"real_order_submissions",0},{"worker_execute_disconnected",disconnected},{"window_screenshot",full},{"disclaimer_screenshot",top}};
  }
 };

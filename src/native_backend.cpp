@@ -1,3 +1,14 @@
+#ifdef _WIN32
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0602
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#ifdef _MSC_VER
+#pragma comment(lib,"Ws2_32.lib")
+#endif
+#endif
 #include "native_backend.h"
 #include "runtime_paths.h"
 #include <QCoreApplication>
@@ -8,6 +19,8 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QHash>
+#include <QHostInfo>
+#include <QHostAddress>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QNetworkCookie>
@@ -20,7 +33,11 @@
 #include <QUrlQuery>
 #include <curl/curl.h>
 #include <algorithm>
+#include <chrono>
+#include <condition_variable>
+#include <deque>
 #include <mutex>
+#include <thread>
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -34,6 +51,111 @@ const QByteArray LEGACY_QUERY_HASH("d68e812d3a5b4c54793f77eb29134f2e96ffc7c26d7d
 const QByteArray BOOKING_HASH("2679f4e20afe8a4db53b0466685073d0eec5b5fb0ad3d583df5270abdbc97341");
 constexpr int MAX_BYTES=2000000,MAX_IPC=8000000;
 using Headers=QList<QPair<QByteArray,QByteArray>>;
+// Public starts share weighted FIFO admission only; independent owners never wait on a fixed local interval.
+struct PublicWireGate {
+ std::mutex mutex;std::condition_variable changed;
+ std::chrono::steady_clock::time_point last;
+ bool sent=false;unsigned long long nextTicket=0;
+ std::deque<unsigned long long> foreground,background;int foregroundRun=0;
+};
+PublicWireGate &publicWireGate(){static PublicWireGate gate;return gate;}
+template<typename Check,typename Drain>
+void waitPublicWireGate(bool publicRequest,bool background,Check check,Drain drain){
+ if(!publicRequest)return;
+ auto &gate=publicWireGate();unsigned long long ticket=0;bool queued=false;
+ auto remove=[&]{std::lock_guard<std::mutex> lock(gate.mutex);if(queued){auto &queue=background?gate.background:gate.foreground;const auto it=std::find(queue.begin(),queue.end(),ticket);if(it!=queue.end())queue.erase(it);queued=false;gate.changed.notify_all();}};
+ try{
+  check();{
+   std::lock_guard<std::mutex> lock(gate.mutex);ticket=++gate.nextTicket;(background?gate.background:gate.foreground).push_back(ticket);queued=true;gate.changed.notify_all();
+  }
+  for(;;){
+   check();std::unique_lock<std::mutex> lock(gate.mutex);
+   const auto now=std::chrono::steady_clock::now();
+   const bool chooseBackground=!gate.background.empty()&&(gate.foreground.empty()||gate.foregroundRun>=3);
+   const auto &chosen=chooseBackground?gate.background:gate.foreground;
+   const bool turn=background==chooseBackground&&!chosen.empty()&&chosen.front()==ticket;
+   if(turn){
+    check();(background?gate.background:gate.foreground).pop_front();queued=false;gate.last=now;gate.sent=true;gate.foregroundRun=background?0:std::min(3,gate.foregroundRun+1);gate.changed.notify_all();return;
+   }
+   gate.changed.wait_for(lock,std::chrono::milliseconds(20));lock.unlock();drain();
+  }
+ }catch(...){remove();throw;}
+}
+// One process-wide DNS lookup serves every connection owner. Refresh never erases
+// last-good addresses: they may bridge a transient resolver outage for five minutes.
+constexpr int PUBLIC_DNS_WAIT_MS=13000,PUBLIC_DNS_RESOLVER_MS=12000;
+constexpr int PUBLIC_DNS_REFRESH_SECONDS=45,PUBLIC_DNS_FRESH_SECONDS=60,PUBLIC_DNS_STALE_SECONDS=300;
+struct PublicDnsState {
+ std::mutex mutex;std::condition_variable changed;bool resolving=false;unsigned long long generation=0;
+ QStringList addresses;QString failure;std::chrono::steady_clock::time_point completed,succeeded;double lookupMs=0;
+};
+PublicDnsState &publicDnsState(){static auto *state=new PublicDnsState;return *state;}
+double publicDnsAgeMs(const PublicDnsState &state){return state.succeeded==std::chrono::steady_clock::time_point{}?-1:std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-state.succeeded).count();}
+bool publicDnsUsable(const PublicDnsState &state){const auto age=publicDnsAgeMs(state);return !state.addresses.isEmpty()&&age>=0&&age<PUBLIC_DNS_STALE_SECONDS*1000.0;}
+bool publicDnsFresh(const PublicDnsState &state){const auto age=publicDnsAgeMs(state);return publicDnsUsable(state)&&age<PUBLIC_DNS_FRESH_SECONDS*1000.0;}
+struct SystemDnsAnswer {QStringList addresses;QString failure;};
+SystemDnsAnswer systemPublicDnsLookup(){
+ SystemDnsAnswer out;
+#ifdef Q_OS_WIN
+ static std::once_flag init;static int startup=WSASYSNOTREADY;
+ std::call_once(init,[]{WSADATA data{};startup=WSAStartup(MAKEWORD(2,2),&data);});
+ if(startup!=0){out.failure=QStringLiteral("native_dns_resolver_unavailable");return out;}
+ OVERLAPPED operation{};operation.hEvent=CreateEventW(nullptr,TRUE,FALSE,nullptr);
+ if(!operation.hEvent){out.failure=QStringLiteral("native_dns_resolver_unavailable");return out;}
+ ADDRINFOEXW hints{};hints.ai_family=AF_UNSPEC;hints.ai_socktype=SOCK_STREAM;hints.ai_protocol=IPPROTO_TCP;
+ PADDRINFOEXW result=nullptr;HANDLE cancellation=nullptr;const auto host=HOST.toStdWString();
+ int status=GetAddrInfoExW(host.c_str(),nullptr,NS_DNS,nullptr,&hints,&result,nullptr,&operation,nullptr,&cancellation);
+ bool timedOut=false;
+ if(status==WSA_IO_PENDING){
+  const DWORD wait=WaitForSingleObject(operation.hEvent,PUBLIC_DNS_RESOLVER_MS);
+  if(wait!=WAIT_OBJECT_0){timedOut=true;GetAddrInfoExCancel(&cancellation);}
+  // The overlapped storage and result pointer must live until cancellation completes.
+  WaitForSingleObject(operation.hEvent,INFINITE);status=GetAddrInfoExOverlappedResult(&operation);
+ }
+ if(status==0&&!timedOut)for(auto *item=result;item;item=item->ai_next){
+  wchar_t numeric[NI_MAXHOST]{};
+  if(item->ai_addr&&GetNameInfoW(item->ai_addr,int(item->ai_addrlen),numeric,NI_MAXHOST,nullptr,0,NI_NUMERICHOST)==0){
+   QHostAddress address(QString::fromWCharArray(numeric));if(address.isNull())continue;QString text=address.toString();
+   if(address.protocol()==QAbstractSocket::IPv6Protocol)text=QLatin1Char('[')+text+QLatin1Char(']');if(!out.addresses.contains(text))out.addresses.append(text);
+  }
+ }
+ if(result)FreeAddrInfoExW(result);CloseHandle(operation.hEvent);
+ if(out.addresses.isEmpty())out.failure=timedOut?QStringLiteral("native_dns_timeout"):QStringLiteral("native_dns_resolution_failed");
+#else
+ const auto answer=QHostInfo::fromName(HOST);
+ if(answer.error()==QHostInfo::NoError)for(const auto &address:answer.addresses()){if(address.isNull())continue;QString text=address.toString();if(address.protocol()==QAbstractSocket::IPv6Protocol)text=QLatin1Char('[')+text+QLatin1Char(']');if(!out.addresses.contains(text))out.addresses.append(text);}
+ if(out.addresses.isEmpty())out.failure=QStringLiteral("native_dns_resolution_failed");
+#endif
+ return out;
+}
+void startPublicDnsLookup(){
+ auto &state=publicDnsState();unsigned long long generation;
+ {std::lock_guard<std::mutex> lock(state.mutex);const auto now=std::chrono::steady_clock::now();
+  if(state.resolving||(publicDnsUsable(state)&&publicDnsAgeMs(state)<PUBLIC_DNS_REFRESH_SECONDS*1000.0)||(state.completed!=std::chrono::steady_clock::time_point{}&&now-state.completed<std::chrono::seconds(3)))return;
+  state.resolving=true;generation=++state.generation;
+ }
+ try{std::thread([generation]{
+  const auto begin=std::chrono::steady_clock::now();SystemDnsAnswer answer;
+  try{answer=systemPublicDnsLookup();}catch(...){answer.failure=QStringLiteral("native_dns_resolution_failed");}
+  auto &state=publicDnsState();std::lock_guard<std::mutex> lock(state.mutex);if(generation!=state.generation)return;
+  if(!answer.addresses.isEmpty()){state.addresses=answer.addresses;state.succeeded=std::chrono::steady_clock::now();}
+  state.failure=answer.failure;state.lookupMs=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-begin).count();state.completed=std::chrono::steady_clock::now();state.resolving=false;state.changed.notify_all();
+ }).detach();}catch(...){std::lock_guard<std::mutex> lock(state.mutex);state.failure=QStringLiteral("native_dns_worker_unavailable");state.lookupMs=0;state.completed=std::chrono::steady_clock::now();state.resolving=false;state.changed.notify_all();}
+}
+struct PublicDnsResult {
+ QStringList addresses;QString failure;double waitMs=0,lookupMs=0;bool cacheHit=false,resolverInFlight=false;double cacheAgeMs=-1;bool staleFallback=false;QString refreshFailure;
+ QJsonObject diagnostics()const{return QJsonObject{{QStringLiteral("source"),QStringLiteral("system_shared_bounded_resolver")},{QStringLiteral("deadline_ms"),PUBLIC_DNS_WAIT_MS},{QStringLiteral("resolver_deadline_ms"),PUBLIC_DNS_RESOLVER_MS},{QStringLiteral("wait_ms"),waitMs},{QStringLiteral("lookup_ms"),lookupMs},{QStringLiteral("cache_hit"),cacheHit},{QStringLiteral("cache_age_ms"),cacheAgeMs},{QStringLiteral("stale_fallback"),staleFallback},{QStringLiteral("stale_limit_seconds"),PUBLIC_DNS_STALE_SECONDS},{QStringLiteral("address_count"),addresses.size()},{QStringLiteral("resolver_inflight"),resolverInFlight},{QStringLiteral("refresh_failure"),refreshFailure},{QStringLiteral("failure"),failure}};}
+};
+template<typename Check,typename Drain>
+PublicDnsResult resolvePublicDns(Check check,Drain drain){
+ check();const auto begin=std::chrono::steady_clock::now();auto &state=publicDnsState();bool cached;{std::lock_guard<std::mutex> lock(state.mutex);cached=publicDnsUsable(state);}startPublicDnsLookup();
+ for(;;){check();std::unique_lock<std::mutex> lock(state.mutex);const double elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-begin).count();
+  if(publicDnsUsable(state))return {state.addresses,QString(),elapsed,state.lookupMs,cached,state.resolving,publicDnsAgeMs(state),!publicDnsFresh(state),state.failure};
+  if(!state.resolving&&!state.failure.isEmpty())return {{},state.failure,elapsed,state.lookupMs,cached,false,-1,false,state.failure};
+  if(elapsed>=PUBLIC_DNS_WAIT_MS)return {{},QStringLiteral("native_dns_timeout"),elapsed,state.lookupMs,cached,state.resolving};
+  state.changed.wait_for(lock,std::chrono::milliseconds(20));lock.unlock();drain();
+ }
+}
 QString canonical(QString value){while(value.startsWith(QLatin1Char('.')))value.remove(0,1);while(value.endsWith(QLatin1Char('.')))value.chop(1);return value.toLower();}
 bool domainAllowed(const QString &domain){const auto d=canonical(domain);return !d.isEmpty()&&(d==HOST||HOST.endsWith(QLatin1Char('.')+d));}
 bool safeCode(const QString &code,int maximum=80){return QRegularExpression(QStringLiteral("^[A-Za-z0-9_-]{1,%1}$").arg(maximum)).match(code).hasMatch();}
@@ -85,7 +207,7 @@ bool challenge(const QByteArray &body){const auto text=QString::fromUtf8(body);i
 }
 
 struct Broker::Impl {
- QByteArray expectedHash=FAST_HASH,activeResponseContentType;bool bookingRuntime=false,activeBooking=false,legacyRuntime=false;int minimumGeneration=2;
+ QByteArray expectedHash=FAST_HASH,activeResponseContentType;bool bookingRuntime=false,activeBooking=false,legacyRuntime=false,publicBackground=false;int minimumGeneration=2;
  QString root,base,node,engine,code=QStringLiteral("H01110005"),entry=ORIGIN+QStringLiteral("/newhlwyl/mobile/appointmentRegisterHome?pathchannel=bjt");
  std::atomic_bool *cancel=nullptr;Qt::HANDLE owner=QThread::currentThreadId();QProcess proc;CURL *curl=nullptr;CookieJar jar;QJsonArray lastSeed,records;QJsonObject report;QJsonArray headerFixture;QSet<QString> allowedScripts,dispatched;QByteArray ipc;QElapsedTimer lifetime,clock; qint64 lastSend=-100000,stderrBytes=0;int serial=0,dispatchCount=0,generation=0;bool accepted=false,closed=false,active=false;QString activeMethod,activePath;
  struct Wire {int status=0;QByteArray body;Headers headers;QString url;};
@@ -113,7 +235,7 @@ struct Broker::Impl {
  static size_t headerCallback(char *ptr,size_t size,size_t count,void *data){auto *w=static_cast<Wire*>(data);const auto n=size*count;QByteArray line(ptr,int(n));if(line.startsWith("HTTP/")){w->headers.clear();return n;}const int colon=line.indexOf(':');if(colon>0)w->headers.append({line.left(colon).trimmed(),line.mid(colon+1).trimmed()});return n;}
  static int progress(void *data,curl_off_t,curl_off_t,curl_off_t,curl_off_t){auto *self=static_cast<Impl*>(data);return (self->cancel&&self->cancel->load())||(self->lifetime.isValid()&&self->lifetime.elapsed()>=180000)?1:0;}
  Wire wire(const QString &method,const QString &target,Headers fields={},const QByteArray &body={}){
-  check();const QUrl u(target,QUrl::StrictMode);require(safeUrl(u),"experimental_transport_target_rejected");const auto path=u.path();const QSet<QString> gets={QStringLiteral("/jtjk/mobile-service/user/collect/newHospital/")+code,QStringLiteral("/mobile/department/hos/list"),QStringLiteral("/bjwechat/hospital"),QStringLiteral("/newhlwyl/mobile/hospital"),QStringLiteral("/newhlwyl/mobile/appointmentRegisterHome"),QStringLiteral("/jtjk/mobile-service/hospital/detail/")+code,QStringLiteral("/jtjk/mobile-service/department/list/")+code};const QSet<QString> posts={QStringLiteral("/mobile/product/list"),QStringLiteral("/mobile/product/detail"),QStringLiteral("/jtjk/mobile-service/product/calendar"),QStringLiteral("/jtjk/mobile-service/product/doctor/detail")};const bool script=allowedScripts.contains(target)&&!path.startsWith(QStringLiteral("/jtjk/mobile-service/"));require((method==QStringLiteral("GET")&&(gets.contains(path)||script))||(method==QStringLiteral("POST")&&posts.contains(path)&&active&&activeMethod==method&&activePath==path)||(bookingRuntime&&activeBooking&&active&&activeMethod==method&&activePath==path&&bookingAllowed(method,path)),"experimental_transport_target_rejected");require(body.size()<=MAX_BYTES,"request_oversize");require(method!=QStringLiteral("GET")||body.isEmpty(),"get_body_rejected");QElapsedTimer pacing;pacing.start();const int minimumIntervalMs=bookingRuntime&&activeBooking?0:750;while(clock.elapsed()-lastSend<minimumIntervalMs){check();QThread::msleep(20);drain();}const double pacingWaitMs=double(pacing.nsecsElapsed())/1e6;require(dispatchCount<12,"experimental_request_budget_exhausted");if(!curl)curl=curl_easy_init();require(curl,"curl_init_failed");curl_easy_reset(curl);Wire result;result.url=target;struct curl_slist *list=nullptr;QSet<QByteArray> present;for(const auto &f:fields){const auto key=f.first.toLower();require(!f.first.contains('\r')&&!f.first.contains('\n')&&!f.second.contains('\r')&&!f.second.contains('\n'),"request_header_invalid");if(key=="cookie"||hop(key)||key.startsWith(':'))continue;present.insert(key);list=curl_slist_append(list,(f.first+": "+f.second).constData());}if(!present.contains("user-agent"))list=curl_slist_append(list,"User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Mobile Safari/537.36");if(!present.contains("accept-language"))list=curl_slist_append(list,"Accept-Language: zh-CN,zh;q=0.9");const auto cookie=jar.header(u);if(!cookie.isEmpty())list=curl_slist_append(list,(QByteArray("Cookie: ")+cookie).constData());list=curl_slist_append(list,"Expect:");const auto encoded=target.toUtf8();curl_easy_setopt(curl,CURLOPT_URL,encoded.constData());curl_easy_setopt(curl,CURLOPT_HTTP_VERSION,CURL_HTTP_VERSION_1_1);curl_easy_setopt(curl,CURLOPT_PROXY,"");curl_easy_setopt(curl,CURLOPT_NOPROXY,"*");curl_easy_setopt(curl,CURLOPT_FOLLOWLOCATION,0L);curl_easy_setopt(curl,CURLOPT_MAXREDIRS,0L);curl_easy_setopt(curl,CURLOPT_SSL_VERIFYPEER,1L);curl_easy_setopt(curl,CURLOPT_SSL_VERIFYHOST,2L);curl_easy_setopt(curl,CURLOPT_CONNECTTIMEOUT_MS,8000L);curl_easy_setopt(curl,CURLOPT_TIMEOUT_MS,20000L);curl_easy_setopt(curl,CURLOPT_NOSIGNAL,1L);curl_easy_setopt(curl,CURLOPT_TCP_NODELAY,1L);curl_easy_setopt(curl,CURLOPT_HTTPHEADER,list);curl_easy_setopt(curl,CURLOPT_ACCEPT_ENCODING,"");curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,&Impl::bodyCallback);curl_easy_setopt(curl,CURLOPT_WRITEDATA,&result);curl_easy_setopt(curl,CURLOPT_HEADERFUNCTION,&Impl::headerCallback);curl_easy_setopt(curl,CURLOPT_HEADERDATA,&result);curl_easy_setopt(curl,CURLOPT_XFERINFOFUNCTION,&Impl::progress);curl_easy_setopt(curl,CURLOPT_XFERINFODATA,this);curl_easy_setopt(curl,CURLOPT_NOPROGRESS,0L);curl_easy_setopt(curl,CURLOPT_PROTOCOLS,CURLPROTO_HTTPS);if(method==QStringLiteral("POST")){curl_easy_setopt(curl,CURLOPT_POST,1L);curl_easy_setopt(curl,CURLOPT_POSTFIELDS,body.constData());curl_easy_setopt(curl,CURLOPT_POSTFIELDSIZE_LARGE,curl_off_t(body.size()));}else curl_easy_setopt(curl,CURLOPT_HTTPGET,1L);lastSend=clock.elapsed();++dispatchCount;const auto status=curl_easy_perform(curl);long http=0;curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE,&http);double dns=0,connect=0,tls=0,firstByte=0,total=0;curl_easy_getinfo(curl,CURLINFO_NAMELOOKUP_TIME,&dns);curl_easy_getinfo(curl,CURLINFO_CONNECT_TIME,&connect);curl_easy_getinfo(curl,CURLINFO_APPCONNECT_TIME,&tls);curl_easy_getinfo(curl,CURLINFO_STARTTRANSFER_TIME,&firstByte);curl_easy_getinfo(curl,CURLINFO_TOTAL_TIME,&total);curl_slist_free_all(list);check();require(status==CURLE_OK,"native_http_transport_failed");result.status=int(http);jar.absorb(result.headers,u);QStringList queries;for(const auto &q:QUrlQuery(u).queryItems())if(!queries.contains(q.first))queries.append(q.first);std::sort(queries.begin(),queries.end());QJsonArray names;for(const auto &c:jar.snapshot())names.append(c.toObject().value(QStringLiteral("key")));records.append(QJsonObject{{QStringLiteral("dispatch"),dispatchCount},{QStringLiteral("method"),method},{QStringLiteral("path"),path},{QStringLiteral("status"),result.status},{QStringLiteral("bytes"),result.body.size()},{QStringLiteral("query_names"),QJsonArray::fromStringList(queries)},{QStringLiteral("cookie_names"),names},{QStringLiteral("http_version_actual_label"),QStringLiteral("HTTP/1.1")},{QStringLiteral("pacing_wait_ms"),pacingWaitMs},{QStringLiteral("dns_ms"),dns*1000.0},{QStringLiteral("connect_ms"),connect*1000.0},{QStringLiteral("tls_ms"),tls*1000.0},{QStringLiteral("first_byte_ms"),firstByte*1000.0},{QStringLiteral("network_total_ms"),total*1000.0}});return result;
+  check();const QUrl u(target,QUrl::StrictMode);require(safeUrl(u),"experimental_transport_target_rejected");const auto path=u.path();const QSet<QString> gets={QStringLiteral("/jtjk/mobile-service/user/collect/newHospital/")+code,QStringLiteral("/mobile/department/hos/list"),QStringLiteral("/bjwechat/hospital"),QStringLiteral("/newhlwyl/mobile/hospital"),QStringLiteral("/newhlwyl/mobile/appointmentRegisterHome"),QStringLiteral("/jtjk/mobile-service/hospital/detail/")+code,QStringLiteral("/jtjk/mobile-service/department/list/")+code};const QSet<QString> posts={QStringLiteral("/mobile/product/list"),QStringLiteral("/mobile/product/detail"),QStringLiteral("/jtjk/mobile-service/product/calendar"),QStringLiteral("/jtjk/mobile-service/product/doctor/detail")};const bool script=allowedScripts.contains(target)&&!path.startsWith(QStringLiteral("/jtjk/mobile-service/"));require((method==QStringLiteral("GET")&&(gets.contains(path)||script))||(method==QStringLiteral("POST")&&posts.contains(path)&&active&&activeMethod==method&&activePath==path)||(bookingRuntime&&activeBooking&&active&&activeMethod==method&&activePath==path&&bookingAllowed(method,path)),"experimental_transport_target_rejected");require(body.size()<=MAX_BYTES,"request_oversize");require(method!=QStringLiteral("GET")||body.isEmpty(),"get_body_rejected");const double pacingWaitMs=0.0;require(dispatchCount<12,"experimental_request_budget_exhausted");const auto dnsResolution=resolvePublicDns([this]{check();},[this]{drain();});report.insert(QStringLiteral("dns_resolution"),dnsResolution.diagnostics());if(!dnsResolution.failure.isEmpty())throw Failure(dnsResolution.failure);if(!curl)curl=curl_easy_init();require(curl,"curl_init_failed");curl_easy_reset(curl);Wire result;result.url=target;struct curl_slist *list=nullptr;QSet<QByteArray> present;for(const auto &f:fields){const auto key=f.first.toLower();require(!f.first.contains('\r')&&!f.first.contains('\n')&&!f.second.contains('\r')&&!f.second.contains('\n'),"request_header_invalid");if(key=="cookie"||hop(key)||key.startsWith(':'))continue;present.insert(key);list=curl_slist_append(list,(f.first+": "+f.second).constData());}if(!present.contains("user-agent"))list=curl_slist_append(list,"User-Agent: Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Mobile Safari/537.36");if(!present.contains("accept-language"))list=curl_slist_append(list,"Accept-Language: zh-CN,zh;q=0.9");const auto cookie=jar.header(u);if(!cookie.isEmpty())list=curl_slist_append(list,(QByteArray("Cookie: ")+cookie).constData());list=curl_slist_append(list,"Expect:");const auto encoded=target.toUtf8();const auto resolveEntry=(u.host()+QStringLiteral(":443:")+dnsResolution.addresses.join(QLatin1Char(','))).toUtf8();struct curl_slist *resolveList=curl_slist_append(nullptr,resolveEntry.constData());if(!resolveList){curl_slist_free_all(list);throw Failure(QStringLiteral("native_dns_mapping_unavailable"));}curl_easy_setopt(curl,CURLOPT_RESOLVE,resolveList);curl_easy_setopt(curl,CURLOPT_URL,encoded.constData());curl_easy_setopt(curl,CURLOPT_HTTP_VERSION,CURL_HTTP_VERSION_1_1);curl_easy_setopt(curl,CURLOPT_PROXY,"");curl_easy_setopt(curl,CURLOPT_NOPROXY,"*");curl_easy_setopt(curl,CURLOPT_FOLLOWLOCATION,0L);curl_easy_setopt(curl,CURLOPT_MAXREDIRS,0L);curl_easy_setopt(curl,CURLOPT_SSL_VERIFYPEER,1L);curl_easy_setopt(curl,CURLOPT_SSL_VERIFYHOST,2L);curl_easy_setopt(curl,CURLOPT_CONNECTTIMEOUT_MS,8000L);curl_easy_setopt(curl,CURLOPT_TIMEOUT_MS,20000L);curl_easy_setopt(curl,CURLOPT_NOSIGNAL,1L);curl_easy_setopt(curl,CURLOPT_TCP_NODELAY,1L);curl_easy_setopt(curl,CURLOPT_HTTPHEADER,list);curl_easy_setopt(curl,CURLOPT_ACCEPT_ENCODING,"");curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,&Impl::bodyCallback);curl_easy_setopt(curl,CURLOPT_WRITEDATA,&result);curl_easy_setopt(curl,CURLOPT_HEADERFUNCTION,&Impl::headerCallback);curl_easy_setopt(curl,CURLOPT_HEADERDATA,&result);curl_easy_setopt(curl,CURLOPT_XFERINFOFUNCTION,&Impl::progress);curl_easy_setopt(curl,CURLOPT_XFERINFODATA,this);curl_easy_setopt(curl,CURLOPT_NOPROGRESS,0L);curl_easy_setopt(curl,CURLOPT_PROTOCOLS,CURLPROTO_HTTPS);if(method==QStringLiteral("POST")){curl_easy_setopt(curl,CURLOPT_POST,1L);curl_easy_setopt(curl,CURLOPT_POSTFIELDS,body.constData());curl_easy_setopt(curl,CURLOPT_POSTFIELDSIZE_LARGE,curl_off_t(body.size()));}else curl_easy_setopt(curl,CURLOPT_HTTPGET,1L);QElapsedTimer gateWait;gateWait.start();try{waitPublicWireGate(!(bookingRuntime&&activeBooking),publicBackground,[this]{check();},[this]{drain();});}catch(...){curl_slist_free_all(resolveList);curl_slist_free_all(list);throw;}const double gateWaitMs=double(gateWait.nsecsElapsed())/1e6;lastSend=clock.elapsed();++dispatchCount;const auto status=curl_easy_perform(curl);long http=0;curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE,&http);double dns=0,connect=0,tls=0,firstByte=0,total=0;curl_easy_getinfo(curl,CURLINFO_NAMELOOKUP_TIME,&dns);curl_easy_getinfo(curl,CURLINFO_CONNECT_TIME,&connect);curl_easy_getinfo(curl,CURLINFO_APPCONNECT_TIME,&tls);curl_easy_getinfo(curl,CURLINFO_STARTTRANSFER_TIME,&firstByte);curl_easy_getinfo(curl,CURLINFO_TOTAL_TIME,&total);curl_slist_free_all(resolveList);curl_slist_free_all(list);result.status=int(http);if(status==CURLE_OK)jar.absorb(result.headers,u);QStringList queries;for(const auto &q:QUrlQuery(u).queryItems())if(!queries.contains(q.first))queries.append(q.first);std::sort(queries.begin(),queries.end());QJsonArray names;for(const auto &c:jar.snapshot())names.append(c.toObject().value(QStringLiteral("key")));records.append(QJsonObject{{QStringLiteral("dispatch"),dispatchCount},{QStringLiteral("method"),method},{QStringLiteral("path"),path},{QStringLiteral("status"),result.status},{QStringLiteral("bytes"),result.body.size()},{QStringLiteral("query_names"),QJsonArray::fromStringList(queries)},{QStringLiteral("cookie_names"),names},{QStringLiteral("http_version_actual_label"),QStringLiteral("HTTP/1.1")},{QStringLiteral("pacing_wait_ms"),pacingWaitMs},{QStringLiteral("global_gate_wait_ms"),gateWaitMs},{QStringLiteral("dns_ms"),dns*1000.0},{QStringLiteral("system_dns_wait_ms"),dnsResolution.waitMs},{QStringLiteral("system_dns_cache_hit"),dnsResolution.cacheHit},{QStringLiteral("connect_ms"),connect*1000.0},{QStringLiteral("tls_ms"),tls*1000.0},{QStringLiteral("first_byte_ms"),firstByte*1000.0},{QStringLiteral("network_total_ms"),total*1000.0},{QStringLiteral("curl_code"),int(status)},{QStringLiteral("transport_ok"),status==CURLE_OK},{QStringLiteral("transport_error"),status==CURLE_OK?QString():QString::fromLatin1(curl_easy_strerror(status))}});check();require(status==CURLE_OK,"native_http_transport_failed");return result;
  }
  QJsonArray seed(){lastSeed=jar.snapshot();return lastSeed;}
  void merge(const QJsonObject &event){require(event.value(QStringLiteral("cookies")).isArray(),"runtime_cookie_snapshot_missing");const auto incoming=event.value(QStringLiteral("cookies")).toArray();jar.merge(incoming,lastSeed);lastSeed=incoming;}
@@ -132,10 +254,12 @@ struct Broker::Impl {
  void shutdown(){if(closed)return;closed=true;if(proc.state()!=QProcess::NotRunning){proc.write("{\"op\":\"close\"}\n");proc.waitForBytesWritten(200);if(!proc.waitForFinished(2000)){proc.kill();proc.waitForFinished(2000);}}stderrBytes+=proc.readAllStandardError().size();proc.readAllStandardOutput();report.insert(QStringLiteral("node_exit_status"),proc.exitCode());report.insert(QStringLiteral("node_process_stopped"),proc.state()==QProcess::NotRunning);if(curl){curl_easy_cleanup(curl);curl=nullptr;}jar.clear();lastSeed={};ipc.clear();accepted=false;report.insert(QStringLiteral("experimental_cleanup_complete"),true);}
 };
 
+void Broker::prefetchPublicDns(){startPublicDnsLookup();}
 Broker::Broker(QString root,std::atomic_bool *cancel):d(new Impl(std::move(root),cancel)){}
 Broker::~Broker(){d->shutdown();}
+void Broker::setPublicBackground(bool background){d->check();require(!d->active,"site_request_not_idle");d->publicBackground=background;}
 void Broker::setCancel(std::atomic_bool *cancel){require(QThread::currentThreadId()==d->owner,"native_broker_owner_thread_required");require(!d->active,"site_selection_not_idle");d->cancel=cancel;}
-void Broker::prewarm(){try{d->ensure();QElapsedTimer cooldown;cooldown.start();while(d->clock.elapsed()-d->lastSend<750){d->check();QThread::msleep(20);d->drain();}d->check();d->report.insert(QStringLiteral("prewarm_cooldown_ms"),double(cooldown.elapsed()));}catch(...){d->shutdown();throw;}}
+void Broker::prewarm(){try{d->ensure();d->check();d->report.insert(QStringLiteral("prewarm_cooldown_ms"),0.0);}catch(...){d->shutdown();throw;}}
 void Broker::selectHospital(const QString &code){d->check();require(safeCode(code),"hospital_code_invalid");require(!d->active,"site_selection_not_idle");d->code=code;d->report.insert(QStringLiteral("selected_hospital_code"),code);}
 void Broker::selectLegacyHospital(const QString &code){
  d->check();require(safeCode(code),"hospital_code_invalid");require(!d->active,"site_selection_not_idle");

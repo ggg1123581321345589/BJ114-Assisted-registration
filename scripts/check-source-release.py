@@ -10,7 +10,7 @@ import os
 import re
 import sys
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 TITLE = "辅助挂号软件 v" + VERSION
 MANIFEST = "SOURCE_MANIFEST.json"
 EXCLUDED_DIRECTORIES = {

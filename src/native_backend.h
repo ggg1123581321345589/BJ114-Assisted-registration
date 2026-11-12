@@ -14,8 +14,10 @@ public:
  Broker(QString projectRoot, std::atomic_bool *cancel);
  ~Broker();
  Broker(const Broker&)=delete; Broker&operator=(const Broker&)=delete;
+ static void prefetchPublicDns();
  void prewarm();
  void setCancel(std::atomic_bool *cancel);
+ void setPublicBackground(bool background);
  void selectHospital(const QString &code);
  void selectLegacyHospital(const QString &code);
  Response request(const QString &method,const QString &path,const QJsonObject &body=QJsonObject(),bool requirePrepared=false);

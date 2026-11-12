@@ -12,7 +12,8 @@ DEFINES += NOMINMAX WIN32_LEAN_AND_MEAN
 win32-msvc*: QMAKE_CXXFLAGS += /utf-8
 contains(TEST_NAME, ^(booking_ui_offline_test|preview_probe)$) {
     QT += gui widgets
-    SOURCES += $$PROJECT_ROOT/src/native_backend.cpp $$PROJECT_ROOT/src/native_service.cpp $$PROJECT_ROOT/src/booking_service.cpp
+    # Refuse unexpected business I/O and suppress constructor DNS in offline UI tests.
+    SOURCES += $$PWD/offline_broker_guard.cpp $$PROJECT_ROOT/src/native_service.cpp $$PROJECT_ROOT/src/booking_service.cpp
     CURL_ROOT = $$(CURL_ROOT)
     !isEmpty(CURL_ROOT) {
         INCLUDEPATH += $$CURL_ROOT/include
@@ -26,5 +27,15 @@ contains(TEST_NAME, ^(booking_ui_offline_test|preview_probe)$) {
 }
 contains(TEST_NAME, ^(legacy_service_offline_test|legacy_query_offline_test)$) {
     SOURCES += $$PROJECT_ROOT/src/native_service.cpp
+}
+equals(TEST_NAME, backend_booking_offline_probe) {
+    CURL_ROOT = $$(CURL_ROOT)
+    !isEmpty(CURL_ROOT): INCLUDEPATH += $$CURL_ROOT/include
+    win32:exists($$CURL_ROOT/lib/libcurl.lib) {
+        LIBS += $$CURL_ROOT/lib/libcurl.lib
+    } else {
+        LIBS += -lcurl
+    }
+    win32: LIBS += -lws2_32
 }
 DESTDIR = $$OUT_PWD/bin

@@ -5,10 +5,10 @@ const hostIsolation=require('./helpers/private_window_runtime.cjs');hostIsolatio
 require('./helpers/xpath_private_ast_runtime_20261109.cjs').install();
 require('./helpers/form_named_properties_runtime_20261109.cjs').install();
 const {applyClockOffset,validateClockOffset}=require('./helpers/clock_offset_audit/apply_clock_offset.cjs');
-const {JSDOM,VirtualConsole,CookieJar,requestInterceptor}=require('../node_modules/jsdom');
+const {JSDOM,VirtualConsole,CookieJar,requestInterceptor}=require('jsdom');
 const childWindowRuntime=require('./helpers/child_window_runtime_20261109.cjs');childWindowRuntime.install();
-const idl=require('../node_modules/jsdom/lib/generated/idl/utils.js');
-const whatwgURL=require('../node_modules/whatwg-url');
+const idl=require('jsdom/lib/generated/idl/utils.js');
+const whatwgURL=require('whatwg-url');
 const {seedCookieJar,exportCookieJar}=require('./helpers/cookie_transfer.cjs');
 const MAX=2_000_000,HOST='www.114yygh.com';
 let dom,jar,config,initialized=false,ready=false,closed=false,sequence=0,generation=0;

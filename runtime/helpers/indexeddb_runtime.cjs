@@ -2,7 +2,7 @@
 
 // Per-runtime-process factory: the navigation engine replaces documents only
 // within its validated www.114yygh.com origin, so one factory preserves state.
-const implementation=require('../../node_modules/fake-indexeddb');
+const implementation=require('fake-indexeddb');
 const factory=new implementation.IDBFactory();
 const constructors={
  IDBFactory:implementation.IDBFactory,

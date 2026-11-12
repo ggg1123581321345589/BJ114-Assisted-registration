@@ -1,7 +1,7 @@
 "use strict";
 // Scoped current-control named lookup; no HTMLDDA/document.all or past-names emulation.
 const fs=require('node:fs'),Module=require('node:module'),path=require('node:path');
-const target=require.resolve('jsdom/lib/generated/idl/HTMLFormElement.js');
+const target=require.resolve("jsdom/lib/generated/idl/HTMLFormElement.js");
 let installed=false;
 function named(impl,key,wrapper,globalObject){
  if(typeof key!=='string'||key===''||/^(0|[1-9][0-9]*)$/.test(key))return null;
@@ -12,7 +12,7 @@ function named(impl,key,wrapper,globalObject){
  const matches=query();
  if(matches.length===0)return null;
  if(matches.length===1)return matches[0];
- const RadioNodeList=require(path.resolve(__dirname,'../../node_modules/jsdom/lib/generated/idl/RadioNodeList.js'));
+ const RadioNodeList=require(require.resolve("jsdom/lib/generated/idl/RadioNodeList.js"));
  return RadioNodeList.createImpl(globalObject,[],{element:impl.getRootNode(),query});
 }
 function install(){

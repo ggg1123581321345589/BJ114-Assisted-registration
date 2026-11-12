@@ -6,7 +6,7 @@ const initializers=new WeakMap();
 let installed=false,hook;
 function install(){
  if(installed)return hook;
- const windows=require(path.resolve(__dirname,'../../node_modules/jsdom/lib/jsdom/browser/Window.js'));
+ const windows=require(require.resolve("jsdom/lib/jsdom/browser/Window.js"));
  const original=windows.createWindow;
  if(typeof original!=='function')throw Error('child_window_createWindow_missing');
  hook=function createWindow(options){

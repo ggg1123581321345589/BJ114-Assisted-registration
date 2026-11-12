@@ -1,20 +1,21 @@
 {
-  "name": "auxiliary-registration-query",
-  "version": "1.0.1",
+  "name": "assisted-registration-desktop",
+  "version": "1.1.0",
   "private": true,
-  "description": "C++ Qt5 appointment availability query desktop runtime",
+  "description": "C++ Qt5 desktop query and manually confirmed appointment assistant",
   "license": "MIT",
   "engines": {
     "node": "^24.15.0 || >=26.0.0"
   },
   "scripts": {
-    "test": "node runtime/self-test.cjs",
-    "check": "node --check runtime/query_runtime.cjs && node --check runtime/self-test.cjs"
+    "check": "node --check runtime/booking_route_runtime.cjs && node --check runtime/query_runtime.cjs && node --check runtime/legacy_readonly_runtime.cjs && node --check runtime/encrypt_phone.cjs",
+    "test:crypto": "node runtime/encrypt_phone.cjs --self-test"
   },
   "dependencies": {
     "jsdom": "file:vendor/jsdom",
     "whatwg-url": "17.3.0",
     "fake-indexeddb": "6.2.7",
-    "@napi-rs/canvas": "1.1.0"
+    "@napi-rs/canvas": "1.1.0",
+    "sm-crypto": "0.5.8"
   }
 }

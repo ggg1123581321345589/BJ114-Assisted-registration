@@ -1,4 +1,5 @@
 #include "native_service.h"
+#include "legacy_departments.h"
 #include <QCryptographicHash>
 #include <QBuffer>
 #include <QDateTime>
@@ -71,11 +72,13 @@ QByteArray readBoundedContent(QIODevice &device,qint64 maximum){
 }
 QString utcNow(){return QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);}
 void checkCancel(std::atomic_bool *p){if(p&&p->load(std::memory_order_relaxed))throw Failure(S("cancelled_by_user"));}
-bool codeValid(const QString &v,int length=160){return QRegularExpression(S("\\A[A-Za-z0-9_-]{1,%1}\\z").arg(length)).match(v).hasMatch();}
+// Preserve the ASCII identifier grammar without compiling one regex per hospital.
+bool codeValid(const QString &v,int length=160){if(v.isEmpty()||v.size()>length)return false;for(const QChar c:v){const ushort u=c.unicode();if(!((u>=65&&u<=90)||(u>=97&&u<=122)||(u>=48&&u<=57)||u==95||u==45))return false;}return true;}
 bool departmentCodeValid(const QString &value){if(value.isEmpty()||value.size()>160)return false;for(const QChar c:value)if(c.unicode()<32)return false;return true;}
 QString scalarString(const QJsonValue &v){if(v.isString())return v.toString();if(v.isDouble())return QString::number(v.toDouble(),'g',16);return QString();}
 bool publicText(const QJsonValue &v){if(!v.isString()||v.toString().isEmpty()||v.toString().size()>300)return false;for(const QChar c:v.toString())if(c.unicode()<32)return false;return true;}
-bool exactKeys(const QJsonObject &o,const QStringList &keys){auto actual=o.keys(),expected=keys;actual.sort();expected.sort();return actual==expected;}
+// Equal counts plus membership prove exact schema equality (object keys are unique).
+bool exactKeys(const QJsonObject &o,const QStringList &keys){if(o.size()!=keys.size())return false;for(auto it=o.constBegin();it!=o.constEnd();++it)if(!keys.contains(it.key()))return false;return true;}
 bool reparse(const QString &path){
  QFileInfo info(path);if(info.isSymLink())return true;
 #ifdef Q_OS_WIN
@@ -93,7 +96,8 @@ QString cachePath(const QString &root,const QString &code,bool create=false){
  if(reparse(path))throw Failure(S("metadata_cache_path_rejected"));return path;
 }
 QDateTime parseUtc(const QJsonValue &value){
- if(!value.isString()||value.toString().size()>40||!QRegularExpression(S("(?:Z|\\+00:00)$")).match(value.toString()).hasMatch())throw Failure(S("metadata_cache_timestamp_invalid"));
+ static const QRegularExpression utcSuffix(S("(?:Z|\\+00:00)$"));
+ if(!value.isString()||value.toString().size()>40||!utcSuffix.match(value.toString()).hasMatch())throw Failure(S("metadata_cache_timestamp_invalid"));
  auto d=QDateTime::fromString(value.toString(),Qt::ISODateWithMs);if(!d.isValid())d=QDateTime::fromString(value.toString(),Qt::ISODate);
  if(!d.isValid()||d.offsetFromUtc()!=0)throw Failure(S("metadata_cache_timestamp_invalid"));return d.toUTC();
 }
@@ -136,7 +140,7 @@ HospitalCatalog parseHospitalCatalog(const QByteArray &raw){
  const auto rows=csvRows(text);if(rows.size()<2)throw Failure(S("hospital_csv_invalid"));
  const int codeIndex=rows[0].indexOf(S("hospital_code")),nameIndex=rows[0].indexOf(S("hospital_name"));
  if(codeIndex<0||nameIndex<0)throw Failure(S("hospital_csv_invalid"));
- HospitalCatalog result;result.digest=QCryptographicHash::hash(raw,QCryptographicHash::Sha256).toHex();QSet<QString> seen;
+ HospitalCatalog result;result.digest=contentSha256(raw).toHex();QSet<QString> seen;
  for(int i=1;i<rows.size();++i){if(rows[i].size()<=qMax(codeIndex,nameIndex))throw Failure(S("hospital_csv_invalid"));const QString code=rows[i][codeIndex].trimmed(),name=rows[i][nameIndex].trimmed();if(!codeValid(code,80)||!publicText(QJsonValue(name))||seen.contains(code))throw Failure(S("hospital_csv_identity_invalid"));seen.insert(code);result.hospitals.append({code,name});}
  if(result.hospitals.isEmpty()||result.hospitals.size()>10000)throw Failure(S("hospital_csv_count_invalid"));return result;
 }
@@ -145,7 +149,8 @@ HospitalCatalog readHospitalCatalog(const QString &root){
 }
 QJsonArray validateProjection(const QJsonValue &value){
  if(!value.isArray())throw Failure(S("metadata_cache_departments_invalid"));const auto deps=value.toArray();if(deps.size()>5000)throw Failure(S("metadata_cache_departments_invalid"));QSet<QString> seen;
- for(const auto &x:deps){if(!x.isObject())throw Failure(S("metadata_cache_projection_invalid"));const auto d=x.toObject();if(!exactKeys(d,{S("code"),S("name"),S("first_department_code"),S("first_department_name")}))throw Failure(S("metadata_cache_projection_invalid"));
+  static const QStringList keys{S("code"),S("name"),S("first_department_code"),S("first_department_name")};
+  for(const auto &x:deps){if(!x.isObject())throw Failure(S("metadata_cache_projection_invalid"));const auto d=x.toObject();if(!exactKeys(d,keys))throw Failure(S("metadata_cache_projection_invalid"));
   if(!d.value(S("code")).isString()||!d.value(S("first_department_code")).isString()||!departmentCodeValid(d.value(S("code")).toString())||!departmentCodeValid(d.value(S("first_department_code")).toString()))throw Failure(S("metadata_cache_department_code_invalid"));
   if(!publicText(d.value(S("name")))||!publicText(d.value(S("first_department_name"))))throw Failure(S("metadata_cache_department_name_invalid"));
   const QString key=d.value(S("first_department_code")).toString()+QChar(0x1f)+d.value(S("code")).toString();if(seen.contains(key))throw Failure(S("metadata_cache_duplicate_department"));seen.insert(key);
@@ -174,7 +179,7 @@ QJsonObject readSnapshotEntry(const QString &root,const QString &code){
   const QString hcode=entry.value(S("hospital_code")).toString();if(!codeValid(hcode,80)||entries.contains(hcode)||!publicText(entry.value(S("hospital_name"))))throw Failure(S("department_snapshot_identity_invalid"));
   const auto dept=validateProjection(entry.value(S("departments")));if(entry.value(S("department_count")).toInt(-1)!=dept.size())throw Failure(S("department_snapshot_count_invalid"));
   const auto fetched=parseUtc(entry.value(S("fetched_at")));if(fetched>QDateTime::currentDateTimeUtc().addSecs(60))throw Failure(S("department_snapshot_timestamp_invalid"));
-  const QByteArray projection=QJsonDocument(dept).toJson(QJsonDocument::Compact);const QString digest=QString::fromLatin1(QCryptographicHash::hash(projection,QCryptographicHash::Sha256).toHex());if(entry.value(S("departments_sha256")).toString()!=digest)throw Failure(S("department_snapshot_hash_invalid"));
+  const QByteArray projection=QJsonDocument(dept).toJson(QJsonDocument::Compact);const QString digest=QString::fromLatin1(contentSha256(projection).toHex());if(entry.value(S("departments_sha256")).toString()!=digest)throw Failure(S("department_snapshot_hash_invalid"));
   entries.insert(hcode,entry);
  }
  for(const auto &hospital:catalog.hospitals){if(!entries.contains(hospital.code)||entries.value(hospital.code).value(S("hospital_name")).toString()!=hospital.name)throw Failure(S("department_snapshot_coverage_invalid"));}
@@ -206,16 +211,48 @@ QJsonArray calendarRows(const QJsonObject &data,const QJsonObject &dept,const QS
 Service::Service(QString root):root_(QDir(root).absolutePath()),owner_(QThread::currentThread()){}
 Service::~Service(){try{if(broker_)broker_->close();}catch(...) {}}
 void Service::close(){if(QThread::currentThread()!=owner_)throw Failure(S("native_service_owner_thread_required"));if(busy_)throw Failure(S("native_service_close_during_run"));if(broker_)broker_->close();broker_.reset();metadata_.clear();closed_=true;}
-void Service::prepare(int required){
+void Service::prepare(int required,bool allowBootstrap){
  checkCancel(cancel_);reused_=false;renewReason_.clear();const double limit=qMin(125.0,180.0-required*25.0-5.0);
+ // Manual prepared queries retain their broker when the next request has no local budget.
+ if(!allowBootstrap){if(!broker_||!broker_->alive())throw Failure(S("manual_connection_required"));if(born_.elapsed()/1000.0>=limit)throw Failure(S("runtime_age_budget"));if(broker_->apiUsed()+required>8||broker_->dispatches()+required>12)throw Failure(S("public_session_budget_exhausted"));reused_=true;broker_->setCancel(cancel_);broker_->selectHospital(currentCode_);return;}
  if(broker_){if(!broker_->alive())renewReason_=S("runtime_not_alive");else if(born_.elapsed()/1000.0>=limit)renewReason_=S("runtime_age_budget");else if(broker_->apiUsed()+required>8)renewReason_=S("runtime_api_budget");if(!renewReason_.isEmpty()){broker_->close();broker_.reset();}}
- if(!broker_){broker_=std::make_unique<Broker>(root_,cancel_);born_.start();++session_;}else reused_=true;
+ if(!broker_){if(!allowBootstrap)throw Failure(S("manual_connection_required"));broker_=std::make_unique<Broker>(root_,cancel_);born_.start();++session_;}else reused_=true;
  broker_->setCancel(cancel_);broker_->selectHospital(currentCode_);
 }
-QJsonObject Service::queryJson(const QString &method,const QString &path,const QJsonObject &body){
+QJsonObject Service::queryJson(const QString &method,const QString &path,const QJsonObject &body,bool requirePrepared){
  checkCancel(cancel_);QElapsedTimer clock;clock.start();QJsonObject summary{{S("method"),method},{S("path"),path},{S("queried_at"),utcNow()}};const int before=broker_->dispatches();
- try{const auto response=broker_->request(method,path,body);checkCancel(cancel_);summary[S("http_status")]=response.status;summary[S("response_bytes")]=response.body.size();summary[S("response_sha256")]=QString::fromLatin1(QCryptographicHash::hash(response.body,QCryptographicHash::Sha256).toHex());if(response.body.size()>RESPONSE_MAX)throw Failure(S("response_oversize"));if(response.status!=200)throw Failure(S("http_%1").arg(response.status));QJsonParseError e;const auto doc=QJsonDocument::fromJson(response.body,&e);if(e.error!=QJsonParseError::NoError||!doc.isObject())throw Failure(S("response_not_json"));const auto payload=doc.object();const auto businessCode=payload.value(S("code"));summary[S("business_code")]=(businessCode.isString()||businessCode.isDouble()||businessCode.isBool()||businessCode.isNull())?businessCode:QJsonValue(QJsonValue::Null);if(path.endsWith(S("/doctor/detail"))){const auto data=payload.value(S("data")).toObject();const auto dutyDate=data.value(S("dutyDate"));summary[S("doctor_response_date")]=(dutyDate.isString()||dutyDate.isDouble())?dutyDate:QJsonValue(QJsonValue::Null);summary[S("doctor_response_date_present")]=!dutyDate.isUndefined();summary[S("doctor_count")]=data.value(S("doctors")).isArray()?QJsonValue(data.value(S("doctors")).toArray().size()):QJsonValue(QJsonValue::Null);}if(businessCode!=QJsonValue(S("0000")))throw Failure(S("business_response_rejected"));summary[S("elapsed_seconds")]=clock.elapsed()/1000.0;summary[S("http_dispatches")]=broker_->dispatches()-before;responses_.append(summary);return payload;}
+ try{const auto response=broker_->request(method,path,body,requirePrepared);checkCancel(cancel_);summary[S("http_status")]=response.status;summary[S("response_bytes")]=response.body.size();summary[S("response_sha256")]=QString::fromLatin1(QCryptographicHash::hash(response.body,QCryptographicHash::Sha256).toHex());if(response.body.size()>RESPONSE_MAX)throw Failure(S("response_oversize"));if(response.status!=200)throw Failure(S("http_%1").arg(response.status));QJsonParseError e;const auto doc=QJsonDocument::fromJson(response.body,&e);if(e.error!=QJsonParseError::NoError||!doc.isObject())throw Failure(S("response_not_json"));const auto payload=doc.object();const auto businessCode=payload.value(S("code"));summary[S("business_code")]=(businessCode.isString()||businessCode.isDouble()||businessCode.isBool()||businessCode.isNull())?businessCode:QJsonValue(QJsonValue::Null);const auto businessMessage=payload.value(S("msg")).isString()?payload.value(S("msg")):payload.value(S("message"));if(businessMessage.isString())summary[S("business_message")]=businessMessage.toString().left(160);if(path.endsWith(S("/doctor/detail"))){const auto data=payload.value(S("data")).toObject();const auto dutyDate=data.value(S("dutyDate"));summary[S("doctor_response_date")]=(dutyDate.isString()||dutyDate.isDouble())?dutyDate:QJsonValue(QJsonValue::Null);summary[S("doctor_response_date_present")]=!dutyDate.isUndefined();summary[S("doctor_count")]=data.value(S("doctors")).isArray()?QJsonValue(data.value(S("doctors")).toArray().size()):QJsonValue(QJsonValue::Null);}// 1521 is a documented date refusal, not a transport failure. Only the caller
+ // for doctor/detail may resolve it using a fresh successful official calendar.
+ if(businessCode!=QJsonValue(S("0000"))&&!(path==S("/jtjk/mobile-service/product/doctor/detail")&&businessCode==QJsonValue(S("1521"))))throw Failure(S("business_response_rejected"));summary[S("elapsed_seconds")]=clock.elapsed()/1000.0;summary[S("http_dispatches")]=broker_->dispatches()-before;responses_.append(summary);return payload;}
  catch(...){summary[S("elapsed_seconds")]=clock.elapsed()/1000.0;summary[S("http_dispatches")]=broker_->dispatches()-before;responses_.append(summary);throw;}
+}
+QJsonObject Service::queryLegacyJson(const QString &method,const QString &path,const QJsonObject &body){
+ checkCancel(cancel_);QElapsedTimer clock;clock.start();QJsonObject summary{{S("method"),method},{S("path"),path},{S("source_system"),S("legacy")},{S("queried_at"),utcNow()}};const int before=broker_->dispatches();
+ try{
+  const auto response=broker_->request(method,path,body,false);checkCancel(cancel_);summary[S("http_status")]=response.status;summary[S("response_bytes")]=response.body.size();summary[S("response_sha256")]=QString::fromLatin1(QCryptographicHash::hash(response.body,QCryptographicHash::Sha256).toHex());
+  if(response.body.size()>RESPONSE_MAX)throw Failure(S("legacy_response_oversize"));if(response.status!=200)throw Failure(S("legacy_http_%1").arg(response.status));
+  QJsonParseError error;const auto document=QJsonDocument::fromJson(response.body,&error);if(error.error!=QJsonParseError::NoError||!document.isObject())throw Failure(S("legacy_response_not_json"));
+  const auto envelope=document.object();summary[S("business_code")]=envelope.value(S("resCode"));QJsonValue data;QJsonObject rejected;if(!legacy::unwrap(envelope,data,rejected))throw Failure(rejected.value(S("failure")).toString());
+  summary[S("elapsed_seconds")]=clock.elapsed()/1000.0;summary[S("http_dispatches")]=broker_->dispatches()-before;responses_.append(summary);return envelope;
+ }catch(...){summary[S("elapsed_seconds")]=clock.elapsed()/1000.0;summary[S("http_dispatches")]=broker_->dispatches()-before;responses_.append(summary);throw;}
+}
+QJsonArray Service::legacyAvailability(const QString &code,const QJsonObject &department,const QString &date,QJsonObject &report){
+ report[S("hospital_system")]=S("legacy");report[S("booking_supported")]=false;report[S("read_only")]=true;report[S("message")]=S("正在查询114旧版官方排班；未取得成功响应前不会推断无号或约满。");
+ try{
+  broker_->selectLegacyHospital(code);born_.restart();const auto mapping=legacy::parseDepartments(queryLegacyJson(S("GET"),S("/mobile/department/hos/list")),code);
+  if(!mapping.value(S("business_success")).toBool())throw Failure(mapping.value(S("failure")).toString());QJsonObject selected;int matches=0;
+  for(const auto &value:mapping.value(S("departments")).toArray()){const auto item=value.toObject();if(item.value(S("code"))==department.value(S("code"))&&item.value(S("first_department_code"))==department.value(S("first_department_code"))){selected=item;++matches;}}
+  if(matches!=1)throw Failure(S("legacy_department_code_missing_or_ambiguous"));
+  const legacy::Context context{code,selected.value(S("first_department_code")).toString(),selected.value(S("code")).toString(),selected.value(S("name")).toString(),utcNow()};
+  const QJsonObject body{{S("hosCode"),code},{S("firstDeptCode"),context.firstDepartmentCode},{S("secondDeptCode"),context.departmentCode}};
+  const auto calendar=legacy::parseCalendar(queryLegacyJson(S("POST"),S("/mobile/product/list"),body),context);if(!calendar.value(S("business_success")).toBool())throw Failure(calendar.value(S("failure")).toString());
+  const auto all=calendar.value(S("rows")).toArray();QJsonObject day;matches=0;for(const auto &value:all){const auto item=value.toObject();if(item.value(S("date"))==QJsonValue(date)){day=item;++matches;}}if(matches!=1)throw Failure(S("legacy_selected_date_missing_or_ambiguous"));QJsonArray rows;
+  if(day.value(S("doctor_list_visible")).toBool()){
+   auto request=body;request[S("target")]=day.value(S("duty_date"));const auto detail=legacy::parseDetail(queryLegacyJson(S("POST"),S("/mobile/product/detail"),request),context,day.value(S("duty_date")).toString());
+   if(!detail.value(S("business_success")).toBool())throw Failure(detail.value(S("failure")).toString());rows=detail.value(S("rows")).toArray();
+  }
+  report[S("doctor_count")]=rows.size();if(rows.isEmpty())rows.append(day);report[S("calendar_rows")]=all;report[S("legacy_calendar_dates")]=all.size();report[S("message")]=S("已读取114旧版官方排班。旧版号源仅供查号，余量未返回可验证数字时显示未知。");return rows;
+ }catch(const std::exception &e){const QString failure=QString::fromUtf8(e.what());report[S("message")]=failure==S("legacy_http_464")?S("114旧版号源接口返回HTTP 464，本次未取得排班。请使用北京114公众号／小程序核对；不能据此判断无号或约满。"):S("114旧版查号未成功（%1），本次未取得可信排班，请使用北京114公众号／小程序核对。").arg(failure);throw;}
 }
 QJsonArray Service::flattenDepartments(const QJsonValue &data){
  if(!data.isArray())throw Failure(S("department_schema_invalid"));QJsonArray result;QSet<QString> seen;int nodes=0;
@@ -224,7 +261,7 @@ QJsonArray Service::flattenDepartments(const QJsonValue &data){
 }
 QJsonArray Service::doctorRows(const QJsonObject &data,const QJsonObject &dept,const QString &date){
  if(!data.value(S("doctors")).isArray())throw Failure(S("doctor_schema_invalid"));const auto doctors=data.value(S("doctors")).toArray();const auto responseDate=data.value(S("dutyDate"));const bool missingDate=responseDate.isUndefined()||responseDate.isNull()||(responseDate.isString()&&responseDate.toString().isEmpty());if(doctors.isEmpty()&&missingDate)return {};if(scalarString(responseDate)!=date)throw Failure(S("doctor_response_mismatch"));QJsonArray rows;const QString stamp=utcNow();
- for(const auto &value:data.value(S("doctors")).toArray()){if(!value.isObject())throw Failure(S("doctor_schema_invalid"));const auto doctor=value.toObject();auto details=doctor.value(S("detail"));if(details.isUndefined()||details.isNull())details=QJsonArray();if(!details.isArray())throw Failure(S("doctor_schema_invalid"));for(const auto &dutyValue:details.toArray()){if(!dutyValue.isObject())throw Failure(S("doctor_schema_invalid"));const auto duty=dutyValue.toObject();auto periods=duty.value(S("period"));if(periods.isUndefined()||periods.isNull()||(periods.isArray()&&periods.toArray().isEmpty()))periods=QJsonArray{QJsonValue(QJsonValue::Null)};if(!periods.isArray())throw Failure(S("doctor_schema_invalid"));for(const auto &periodValue:periods.toArray()){if(!periodValue.isNull()&&!periodValue.isObject())throw Failure(S("doctor_schema_invalid"));const auto period=periodValue.toObject();QString title=period.value(S("dutyTimeView")).toString();if(title.isEmpty())title=duty.value(S("dutyCodeView")).toString();rows.append(QJsonObject{{S("department_code"),dept.value(S("code"))},{S("department_name"),data.value(S("dept2Name")).toString(dept.value(S("name")).toString())},{S("date"),date},{S("doctor_name"),doctor.value(S("doctorName")).toString()},{S("doctor_code"),scalarString(doctor.value(S("doctorCode")))},{S("period"),title},{S("remaining"),remaining(periodValue.isNull()?duty.value(S("ncode")):period.value(S("ncode")))},{S("status"),statusText(duty)},{S("raw_status"),duty.value(S("productStatus"))},{S("row_kind"),S("doctor_period")},{S("queried_at"),stamp}});if(rows.size()>100000)throw Failure(S("doctor_rows_limit"));}}}return rows;
+ for(const auto &value:data.value(S("doctors")).toArray()){if(!value.isObject())throw Failure(S("doctor_schema_invalid"));const auto doctor=value.toObject();auto details=doctor.value(S("detail"));if(details.isUndefined()||details.isNull())details=QJsonArray();if(!details.isArray())throw Failure(S("doctor_schema_invalid"));for(const auto &dutyValue:details.toArray()){if(!dutyValue.isObject())throw Failure(S("doctor_schema_invalid"));const auto duty=dutyValue.toObject();auto periods=duty.value(S("period"));if(periods.isUndefined()||periods.isNull()||(periods.isArray()&&periods.toArray().isEmpty()))periods=QJsonArray{QJsonValue(QJsonValue::Null)};if(!periods.isArray())throw Failure(S("doctor_schema_invalid"));for(const auto &periodValue:periods.toArray()){if(!periodValue.isNull()&&!periodValue.isObject())throw Failure(S("doctor_schema_invalid"));const auto period=periodValue.toObject();QString title=period.value(S("dutyTimeView")).toString();if(title.isEmpty())title=duty.value(S("dutyCodeView")).toString();rows.append(QJsonObject{{S("booking_payload"),QJsonObject{{S("firstDeptCode"),doctor.value(S("firstDeptCode"))},{S("secondDeptCode"),doctor.value(S("secondDeptCode"))},{S("dutyDate"),date},{S("doctorCode"),doctor.value(S("doctorCode"))},{S("uniqueProductKey"),duty.value(S("uniqueProductKey"))},{S("uniqueProductTimeKey"),period.value(S("uniqProductKey"))},{S("sourcePage"),S("list")}}},{S("product_status"),duty.value(S("productStatus"))},{S("department_code"),dept.value(S("code"))},{S("department_name"),data.value(S("dept2Name")).toString(dept.value(S("name")).toString())},{S("date"),date},{S("doctor_name"),doctor.value(S("doctorName")).toString()},{S("doctor_code"),scalarString(doctor.value(S("doctorCode")))},{S("period"),title},{S("remaining"),remaining(periodValue.isNull()?duty.value(S("ncode")):period.value(S("ncode")))},{S("status"),statusText(duty)},{S("raw_status"),duty.value(S("productStatus"))},{S("row_kind"),S("doctor_period")},{S("queried_at"),stamp}});if(rows.size()>100000)throw Failure(S("doctor_rows_limit"));}}}return rows;
 }
 QJsonObject Service::cacheOnly(const QString &root,const QString &code){
  if(!codeValid(code,80))return {};try{auto v=readSnapshotEntry(root,code);if(!v.isEmpty())return cacheReport(root,code,v,S("snapshot"));}catch(const Failure&){return {};}
@@ -248,12 +285,13 @@ QJsonObject Service::execute(const QString &operation,const QJsonObject &params,
  try{
   checkCancel(cancel_);if(!codeValid(code,80))throw Failure(S("hospital_code_invalid"));if(operation!=S("prewarm")&&operation!=S("departments")&&operation!=S("availability"))throw Failure(S("unsupported_public_operation"));if(params.contains(S("force_metadata_refresh"))&&!params.value(S("force_metadata_refresh")).isBool())throw Failure(S("metadata_refresh_flag_invalid"));if(params.contains(S("allow_department_network"))&&!params.value(S("allow_department_network")).isBool())throw Failure(S("department_network_flag_invalid"));if(params.contains(S("fresh_department_network"))&&!params.value(S("fresh_department_network")).isBool())throw Failure(S("department_freshness_flag_invalid"));const bool force=params.value(S("force_metadata_refresh")).toBool(),allowDepartmentNetwork=params.value(S("allow_department_network")).toBool(false),freshDepartmentNetwork=params.value(S("fresh_department_network")).toBool(false);if(freshDepartmentNetwork&&!allowDepartmentNetwork)throw Failure(S("fresh_department_network_not_authorized"));const QString department=params.value(S("department_code")).toString(),date=params.value(S("date")).toString(params.value(S("duty_date")).toString());
   if(params.contains(S("renew_session"))){if(!params.value(S("renew_session")).isBool())throw Failure(S("session_renewal_flag_invalid"));if(operation!=S("prewarm"))throw Failure(S("session_renewal_operation_invalid"));}const bool renewSession=params.value(S("renew_session")).toBool(false);
+  if(params.contains(S("require_prepared_session"))&&(!params.value(S("require_prepared_session")).isBool()||operation!=S("availability")))throw Failure(S("prepared_session_flag_invalid"));const bool requirePrepared=params.value(S("require_prepared_session")).toBool(false);
   if(operation==S("availability")&&(!departmentCodeValid(department)||!QRegularExpression(S("^[0-9]{8}$")).match(date).hasMatch()||!QDate::fromString(date,S("yyyyMMdd")).isValid()))throw Failure(S("selected_department_and_date_required"));
   if(operation==S("prewarm")){if(renewSession&&broker_){broker_->close();broker_.reset();}prepare(2);if(renewSession)renewReason_=S("requested_session_renewal");before=broker_->dispatches();broker_->prewarm();checkCancel(cancel_);report[S("prewarm_complete")]=true;report[S("status")]=S("ready");}
   else{
    QElapsedTimer metadataClock;metadataClock.start();auto deps=departments(code,force,allowDepartmentNetwork,freshDepartmentNetwork,meta);metadataLookupMs=double(metadataClock.nsecsElapsed())/1e6;hit=!meta.isEmpty();source=meta.take(S("_source")).toString();
-   if(!(hit&&operation==S("departments"))){prepare((hit?0:1)+(operation==S("availability")?2:0));before=broker_->dispatches();}
-   if(!hit){auto payload=queryJson(S("GET"),S("/jtjk/mobile-service/department/list/")+code);deps=flattenDepartments(payload.value(S("data")));const QString stamp=utcNow();meta={{S("schema_version"),1},{S("hospital_code"),code},{S("hospital_name"),hospitalName(root_,code)},{S("fetched_at"),stamp},{S("cached_at"),stamp},{S("departments"),deps}};validateCache(meta,code);const auto raw=QJsonDocument(meta).toJson(QJsonDocument::Compact);if(raw.size()>CACHE_MAX)throw Failure(S("metadata_projection_oversize"));checkCancel(cancel_);try{const QString path=cachePath(root_,code,true);QSaveFile file(path);file.setDirectWriteFallback(false);if(!file.open(QIODevice::WriteOnly)||file.write(raw)!=raw.size())throw Failure(S("metadata_cache_write_unavailable"));checkCancel(cancel_);if(cachePath(root_,code)!=path||!file.commit())throw Failure(S("metadata_cache_write_unavailable"));}catch(const Failure &e){if(QString::fromUtf8(e.what())==S("cancelled_by_user"))throw;cacheWarning_=S("metadata_cache_write_unavailable");}metadata_[code]=meta;invalidated_.remove(code);source=S("network");}
+   if(!(hit&&operation==S("departments"))){prepare(requirePrepared?1:(hit?0:1)+(operation==S("availability")?2:0),!requirePrepared);before=broker_->dispatches();}
+   if(!hit){auto payload=queryJson(S("GET"),S("/jtjk/mobile-service/department/list/")+code,QJsonObject(),requirePrepared);deps=flattenDepartments(payload.value(S("data")));const QString stamp=utcNow();meta={{S("schema_version"),1},{S("hospital_code"),code},{S("hospital_name"),hospitalName(root_,code)},{S("fetched_at"),stamp},{S("cached_at"),stamp},{S("departments"),deps}};validateCache(meta,code);const auto raw=QJsonDocument(meta).toJson(QJsonDocument::Compact);if(raw.size()>CACHE_MAX)throw Failure(S("metadata_projection_oversize"));checkCancel(cancel_);try{const QString path=cachePath(root_,code,true);QSaveFile file(path);file.setDirectWriteFallback(false);if(!file.open(QIODevice::WriteOnly)||file.write(raw)!=raw.size())throw Failure(S("metadata_cache_write_unavailable"));checkCancel(cancel_);if(cachePath(root_,code)!=path||!file.commit())throw Failure(S("metadata_cache_write_unavailable"));}catch(const Failure &e){if(QString::fromUtf8(e.what())==S("cancelled_by_user"))throw;cacheWarning_=S("metadata_cache_write_unavailable");}metadata_[code]=meta;invalidated_.remove(code);source=S("network");}
    report[S("hospital_name")]=hospitalName(root_,code);report[S("departments")]=deps;report[S("metadata_queried_at")]=meta.value(S("fetched_at"));report[S("metadata_cached_at")]=meta.value(S("cached_at"));report[S("metadata_expires_at")]=source==S("snapshot")?QJsonValue(QJsonValue::Null):QJsonValue(parseUtc(meta.value(S("fetched_at"))).addSecs(TTL).toString(Qt::ISODateWithMs));report[S("metadata_ttl_seconds")]=source==S("snapshot")?QJsonValue(QJsonValue::Null):QJsonValue(TTL);report[S("metadata_persistent")]=source==S("snapshot");report[S("metadata_cache_source")]=source;
    if(operation==S("availability")){
     const QString firstDepartment=params.value(S("first_department_code")).toString();if(!firstDepartment.isEmpty()&&!departmentCodeValid(firstDepartment))throw Failure(S("department_code_invalid"));
@@ -261,24 +299,51 @@ QJsonObject Service::execute(const QString &operation,const QJsonObject &params,
     const QJsonObject body{{S("hosCode"),code},{S("firstDeptCode"),dept.value(S("first_department_code"))},{S("secondDeptCode"),department}};
     auto doctorBody=body;doctorBody[S("dutyDate")]=date;doctorBody[S("type")]=S("");doctorBody[S("dutyCode")]=S("");
     // The selected-date detail is already live and date-validated. Avoid a preceding calendar round trip.
-    const auto doctor=queryJson(S("POST"),S("/jtjk/mobile-service/product/doctor/detail"),doctorBody);
-    if(!doctor.value(S("data")).isObject())throw Failure(S("doctor_schema_invalid"));
-    const auto data=doctor.value(S("data")).toObject();auto rows=doctorRows(data,dept,date);
-    report[S("doctor_count")]=data.value(S("doctors")).toArray().size();
-    const bool calendarChecked=rows.isEmpty();QJsonValue calendarDates(QJsonValue::Null);
-    if(calendarChecked){
-     // Empty detail needs a fresh calendar status; never reuse counts or retry a failed detail request.
-     const auto cal=queryJson(S("POST"),S("/jtjk/mobile-service/product/calendar"),body);
-     if(!cal.value(S("data")).isObject())throw Failure(S("calendar_schema_invalid"));
-     const auto all=calendarRows(cal.value(S("data")).toObject(),dept,utcNow());matches=0;
-     for(const auto &v:all)if(v.toObject().value(S("date")).toString()==date){rows.append(v);++matches;}
-     if(matches!=1)throw Failure(S("selected_date_missing_or_ambiguous"));calendarDates=all.size();
+    const auto doctor=queryJson(S("POST"),S("/jtjk/mobile-service/product/doctor/detail"),doctorBody,requirePrepared);
+    const bool dateRefused=doctor.value(S("code"))==QJsonValue(S("1521"));
+    QJsonArray rows;QJsonObject data;bool legacyQuery=false;
+    if(!dateRefused){if(!doctor.value(S("data")).isObject())throw Failure(S("doctor_schema_invalid"));data=doctor.value(S("data")).toObject();rows=doctorRows(data,dept,date);}
+    report[S("doctor_count")]=dateRefused?QJsonValue(QJsonValue::Null):QJsonValue(data.value(S("doctors")).toArray().size());
+    // An empty new-system detail cannot establish availability for a legacy hospital.
+    if(rows.isEmpty()&&!dateRefused){
+     if(!hospitalNewRoute_.contains(code)){
+      const auto route=queryJson(S("GET"),S("/jtjk/mobile-service/user/collect/newHospital/")+code,QJsonObject(),requirePrepared);
+      if(!route.value(S("data")).isBool())throw Failure(S("hospital_route_schema_invalid"));
+      hospitalNewRoute_.insert(code,route.value(S("data")).toBool());
+     }
+     report[S("hospital_system")]=hospitalNewRoute_.value(code)?S("new"):S("legacy");
+     if(!hospitalNewRoute_.value(code)){
+      rows=legacyAvailability(code,dept,date,report);legacyQuery=true;before=0;
+     }
     }
-    report[S("rows")]=rows;report[S("coverage")]=QJsonObject{{S("mode"),S("department_selected_date")},{S("scope"),S("one_department_one_date")},{S("coverage_scope"),S("one_department_one_date")},{S("selected_duty_date"),date},{S("department_total"),1},{S("departments_completed"),1},{S("doctor_dates_completed"),1},{S("calendar_dates"),calendarDates},{S("calendar_checked"),calendarChecked},{S("query_strategy"),S("doctor_detail_first")},{S("selected_date_evidence"),calendarChecked?S("calendar_after_empty_detail"):S("doctor_detail")},{S("requested_date_count"),1},{S("full_department_calendar_coverage"),false},{S("selected_date_completed"),true}};
-   }report[S("status")]=S("complete");report[S("business_success")]=true;
+    const bool calendarChecked=!legacyQuery&&(dateRefused||rows.isEmpty());QJsonValue calendarDates(QJsonValue::Null);
+    if(calendarChecked){
+     // One public calendar lookup explains an empty or disallowed date. No
+     // detail retry, no invented doctors, counts, identifiers or booking payload.
+     const auto cal=queryJson(S("POST"),S("/jtjk/mobile-service/product/calendar"),body,requirePrepared);
+     if(!cal.value(S("data")).isObject())throw Failure(S("calendar_schema_invalid"));
+     const auto all=calendarRows(cal.value(S("data")).toObject(),dept,utcNow());matches=0;QJsonArray availableDates;
+     for(const auto &v:all){const auto entry=v.toObject();availableDates.append(entry.value(S("date")));if(entry.value(S("date")).toString()==date){rows.append(v);++matches;}}
+     if(matches>1)throw Failure(S("selected_date_missing_or_ambiguous"));
+     if(matches==0&&!dateRefused)throw Failure(S("selected_date_missing_or_ambiguous"));
+     if(dateRefused){
+      QString official=doctor.value(S("message")).toString(doctor.value(S("msg")).toString()).left(160);
+      report[S("official_business_code")]=S("1521");report[S("official_message")]=official;
+      report[S("available_dates")]=availableDates;report[S("calendar_rows")]=all;
+      report[S("selected_date_in_calendar")]=matches==1;
+      if(matches==0){
+       rows.append(QJsonObject{{S("department_code"),dept.value(S("code"))},{S("department_name"),dept.value(S("name"))},{S("date"),date},{S("doctor_name"),S("")},{S("period"),S("")},{S("remaining"),QJsonValue(QJsonValue::Null)},{S("status"),S("不在官方可查询日期内")},{S("row_kind"),S("date_unavailable")},{S("queried_at"),utcNow()}});
+       QStringList dates;for(const auto &d:availableDates)dates.append(QDate::fromString(d.toString(),S("yyyyMMdd")).toString(S("yyyy-MM-dd")));
+       report[S("message")]=S("%1 不在该科室官方可查询日期内。官方提示：%2。官方公布日期：%3。请在月历选择其他日期。").arg(QDate::fromString(date,S("yyyyMMdd")).toString(S("yyyy-MM-dd")),official,dates.isEmpty()?S("暂无"):dates.join(S("、")));
+      }else report[S("message")]=S("官方提示：%1；已显示该日期的最新官方日历状态。").arg(official);
+     }
+     calendarDates=all.size();
+    }
+    for(int i=0;i<rows.size();++i){auto row=rows[i].toObject();if(row.contains(S("booking_payload"))){auto route=row.value(S("booking_payload")).toObject();route[S("hosCode")]=code;row[S("booking_payload")]=route;}rows[i]=row;}report[S("rows")]=rows;report[S("coverage")]=QJsonObject{{S("mode"),S("department_selected_date")},{S("scope"),S("one_department_one_date")},{S("coverage_scope"),S("one_department_one_date")},{S("selected_duty_date"),date},{S("department_total"),1},{S("departments_completed"),1},{S("doctor_dates_completed"),1},{S("calendar_dates"),legacyQuery?report.value(S("legacy_calendar_dates")):calendarDates},{S("calendar_checked"),legacyQuery||calendarChecked},{S("query_strategy"),legacyQuery?S("legacy_calendar_then_detail"):S("doctor_detail_first")},{S("selected_date_evidence"),legacyQuery?S("legacy_official_calendar_and_detail"):dateRefused?S("calendar_after_date_refusal"):calendarChecked?S("calendar_after_empty_detail"):S("doctor_detail")},{S("requested_date_count"),1},{S("full_department_calendar_coverage"),false},{S("selected_date_completed"),true}};
+   }if(report.value(S("hospital_system"))==QJsonValue(S("legacy"))&&broker_){broker_->close();broker_.reset();}report[S("status")]=S("complete");report[S("business_success")]=true;
   }report[S("exit_status")]=0;report[S("failure")]=QJsonValue(QJsonValue::Null);
- }catch(const std::exception &e){const QString raw=QString::fromUtf8(e.what());const QString failure=QRegularExpression(S("^[a-z_0-9]{1,100}$")).match(raw).hasMatch()?raw:S("native_service_failure");dispatches=broker_?qMax(0,broker_->dispatches()-before):0;report[S("failure")]=failure;report[S("status")]=failure==S("cancelled_by_user")?S("cancelled"):S("failed");report[S("rows")]=QJsonArray();report[S("session_invalidated")]=true;if(broker_){report[S("runtime")]=broker_->diagnostics();broker_->close();report[S("runtime")]=broker_->diagnostics();broker_.reset();}}
- if(broker_)dispatches=qMax(0,broker_->dispatches()-before);int api=0;for(const auto &v:responses_)if(v.toObject().value(S("business_code"))==QJsonValue(S("0000")))++api;report[S("responses")]=responses_;report[S("performance")]=QJsonObject{{S("elapsed_seconds"),elapsed.elapsed()/1000.0},{S("metadata_lookup_ms"),metadataLookupMs},{S("http_dispatches"),dispatches},{S("session_reused"),reused_},{S("metadata_cache_hit"),hit},{S("metadata_cache_source"),source},{S("metadata_source"),source},{S("session_number"),session_},{S("renew_reason"),renewReason_.isEmpty()?QJsonValue(QJsonValue::Null):QJsonValue(renewReason_)},{S("api_requests"),api},{S("session_api_used"),broker_?broker_->apiUsed():0},{S("session_age_seconds"),broker_?QJsonValue(born_.elapsed()/1000.0):QJsonValue(QJsonValue::Null)}};report[S("session_kept_open")]=bool(broker_);report[S("cleanup_complete")]=!broker_;if(broker_)report[S("runtime")]=broker_->diagnostics();if(!cacheWarning_.isEmpty())report[S("metadata_cache_warning")]=cacheWarning_;report[S("finished_at")]=utcNow();cancel_=nullptr;busy_=false;return report;
+ }catch(const std::exception &e){const QString raw=QString::fromUtf8(e.what());const QString failure=QRegularExpression(S("^[a-z_0-9]{1,100}$")).match(raw).hasMatch()?raw:S("native_service_failure");dispatches=broker_?qMax(0,broker_->dispatches()-before):0;report[S("failure")]=failure;report[S("status")]=failure==S("cancelled_by_user")?S("cancelled"):S("failed");report[S("rows")]=QJsonArray();const bool keptForBudget=failure==S("public_session_budget_exhausted")&&broker_&&broker_->alive();report[S("session_invalidated")]=!keptForBudget;if(broker_){report[S("runtime")]=broker_->diagnostics();if(!keptForBudget){broker_->close();report[S("runtime")]=broker_->diagnostics();broker_.reset();}}}
+ if(broker_)dispatches=qMax(0,broker_->dispatches()-before);if(report.value(S("hospital_system"))==QJsonValue(S("legacy"))){dispatches=0;for(const auto &entry:responses_)dispatches+=entry.toObject().value(S("http_dispatches")).toInt();}int api=0;for(const auto &v:responses_)if(v.toObject().value(S("business_code"))==QJsonValue(S("0000"))||(v.toObject().value(S("source_system"))==QJsonValue(S("legacy"))&&v.toObject().value(S("business_code"))==QJsonValue(0)))++api;report[S("responses")]=responses_;report[S("performance")]=QJsonObject{{S("elapsed_seconds"),elapsed.elapsed()/1000.0},{S("metadata_lookup_ms"),metadataLookupMs},{S("http_dispatches"),dispatches},{S("session_reused"),reused_},{S("metadata_cache_hit"),hit},{S("metadata_cache_source"),source},{S("metadata_source"),source},{S("session_number"),session_},{S("renew_reason"),renewReason_.isEmpty()?QJsonValue(QJsonValue::Null):QJsonValue(renewReason_)},{S("api_requests"),api},{S("session_api_used"),broker_?broker_->apiUsed():0},{S("session_age_seconds"),broker_?QJsonValue(born_.elapsed()/1000.0):QJsonValue(QJsonValue::Null)}};report[S("session_kept_open")]=bool(broker_);report[S("query_allowed")]=broker_&&broker_->alive()&&broker_->apiUsed()<8&&broker_->dispatches()<12;report[S("cleanup_complete")]=!broker_;if(broker_)report[S("runtime")]=broker_->diagnostics();if(!cacheWarning_.isEmpty())report[S("metadata_cache_warning")]=cacheWarning_;report[S("finished_at")]=utcNow();cancel_=nullptr;busy_=false;return report;
 }
 
 QJsonObject Service::crawlAllDepartments(const QString &root,std::atomic_bool *cancel,int workers){

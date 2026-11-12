@@ -2,7 +2,7 @@
 // Preserve XPath evaluation while moving AST/document state off public expressions.
 // Runtime-only loader transform; installed jsdom files and challenge code stay intact.
 const fs=require('node:fs'),Module=require('node:module'),path=require('node:path');
-const TARGET=require.resolve('jsdom/lib/jsdom/level3/xpath.js');
+const TARGET=require.resolve("jsdom/lib/jsdom/level3/xpath.js");
 let installed=false;
 function install(){
  if(installed)return;

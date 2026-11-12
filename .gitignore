@@ -1,66 +1,48 @@
-# Dependencies and local package caches
+# Local dependencies and build products
 node_modules/
-.npm/
 .wireit/
-
-# Generated builds and deployment binaries
-/build/
-/build-*/
-/build_*/
-/bin/
-/dist/
-/release/
+build/
+build-*/
+bin/
+release/
+debug/
 *.exe
 *.dll
-*.obj
-*.o
 *.lib
-*.a
+*.obj
 *.pdb
 *.ilk
 *.exp
 *.res
-*.idb
-*.pch
-*.moc
 moc_*.cpp
-Makefile
-Makefile.*
+ui_*.h
+Makefile*
 .qmake.stash
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-CTestTestfile.cmake
-Testing/
+*.pro.user*
+build.log
 
-# Local runtime output, captures and configuration
-/output/
-/captures/
-/logs/
-/tmp/
-/temp/
+# Private runtime material and external evidence
+output/
+verification/
+captures/
+session/
+sessions/
+cookies/
 *.log
+*.har
+*.pcap
+*.pcapng
+*.zip
 .env
 .env.*
 !.env.example
-*.local.json
-*.local.cmd
-*.local.ps1
 
-# Editor, OS and archive files
+# Editor / OS metadata
 .vs/
 .vscode/
 .idea/
-*.user
-*.suo
-*.VC.db
-*.VC.opendb
 __pycache__/
 *.pyc
-.DS_Store
 Thumbs.db
 Desktop.ini
-*.zip
-*.7z
-*.bak
-*.tmp
+.DS_Store

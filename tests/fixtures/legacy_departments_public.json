@@ -1,0 +1,776 @@
+{
+  "resCode": 0,
+  "data": {
+    "count": 18,
+    "list": [
+      {
+        "code": "be48f7a98dae53f3507d00f2a96b11e8",
+        "name": "消化内科医学部",
+        "subList": [
+          {
+            "code": "200140304",
+            "name": "消化内镜超级微创科（内镜手术）",
+            "dept1Code": "be48f7a98dae53f3507d00f2a96b11e8"
+          },
+          {
+            "code": "200140305",
+            "name": "消化疾病普通诊",
+            "dept1Code": "be48f7a98dae53f3507d00f2a96b11e8"
+          },
+          {
+            "code": "200140306",
+            "name": "微生态疾病科",
+            "dept1Code": "be48f7a98dae53f3507d00f2a96b11e8"
+          },
+          {
+            "code": "200140307",
+            "name": "肝脏疾病科",
+            "dept1Code": "be48f7a98dae53f3507d00f2a96b11e8"
+          },
+          {
+            "code": "200140308",
+            "name": "食管胃病科（上消化道）",
+            "dept1Code": "be48f7a98dae53f3507d00f2a96b11e8"
+          },
+          {
+            "code": "200140309",
+            "name": "胆胰疾病科",
+            "dept1Code": "be48f7a98dae53f3507d00f2a96b11e8"
+          },
+          {
+            "code": "200140320",
+            "name": "肠道疾病科（下消化道）",
+            "dept1Code": "be48f7a98dae53f3507d00f2a96b11e8"
+          },
+          {
+            "code": "200002247",
+            "name": "消化疾病专家诊及专病诊",
+            "dept1Code": "be48f7a98dae53f3507d00f2a96b11e8"
+          }
+        ]
+      },
+      {
+        "code": "ea21bc5cf739f42498ed2ef612fb2324",
+        "name": "神经内科医学部",
+        "subList": [
+          {
+            "code": "200140291",
+            "name": "神经内科",
+            "dept1Code": "ea21bc5cf739f42498ed2ef612fb2324"
+          },
+          {
+            "code": "200140295",
+            "name": "神经重症医学亚专科",
+            "dept1Code": "ea21bc5cf739f42498ed2ef612fb2324"
+          },
+          {
+            "code": "200140300",
+            "name": "神经介入亚专科",
+            "dept1Code": "ea21bc5cf739f42498ed2ef612fb2324"
+          }
+        ]
+      },
+      {
+        "code": "01b6813505a202fe76a46fd9f6e4c863",
+        "name": "肾脏病科医学部",
+        "subList": [
+          {
+            "code": "200002253",
+            "name": "肾脏病科",
+            "dept1Code": "01b6813505a202fe76a46fd9f6e4c863"
+          }
+        ]
+      },
+      {
+        "code": "10c186f26ae7ecf8160e2dcf1f2e7312",
+        "name": "普通外科医学部",
+        "subList": [
+          {
+            "code": "200053529",
+            "name": "结直肠外科门诊",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          },
+          {
+            "code": "200053530",
+            "name": "甲状腺(疝)外科门诊",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          },
+          {
+            "code": "200053565",
+            "name": "胃肠肿瘤外科门诊",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          },
+          {
+            "code": "200053566",
+            "name": "胃肠间质瘤门诊",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          },
+          {
+            "code": "200053589",
+            "name": "腹膜后肿瘤外科门诊",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          },
+          {
+            "code": "200135200",
+            "name": "普通外科造口门诊",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          },
+          {
+            "code": "200002277",
+            "name": "普通外科",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          },
+          {
+            "code": "200002263",
+            "name": "胃外科门诊",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          },
+          {
+            "code": "200002266",
+            "name": "乳腺外科门诊",
+            "dept1Code": "10c186f26ae7ecf8160e2dcf1f2e7312"
+          }
+        ]
+      },
+      {
+        "code": "a536bbf2f1d71d2b6af6c7f79e5a2963",
+        "name": "神经外科医学部",
+        "subList": [
+          {
+            "code": "200140294",
+            "name": "神经肿瘤外科",
+            "dept1Code": "a536bbf2f1d71d2b6af6c7f79e5a2963"
+          },
+          {
+            "code": "200140299",
+            "name": "功能神经外科",
+            "dept1Code": "a536bbf2f1d71d2b6af6c7f79e5a2963"
+          },
+          {
+            "code": "200140302",
+            "name": "颅脑创伤外科",
+            "dept1Code": "a536bbf2f1d71d2b6af6c7f79e5a2963"
+          },
+          {
+            "code": "200140303",
+            "name": "重症医学科",
+            "dept1Code": "a536bbf2f1d71d2b6af6c7f79e5a2963"
+          },
+          {
+            "code": "200002280",
+            "name": "神经外科",
+            "dept1Code": "a536bbf2f1d71d2b6af6c7f79e5a2963"
+          }
+        ]
+      },
+      {
+        "code": "c9e1d07fa7326baec8c7b83a1de5be84",
+        "name": "脊髓脊柱外科门诊",
+        "subList": [
+          {
+            "code": "200053367",
+            "name": "脊髓脊柱外科",
+            "dept1Code": "c9e1d07fa7326baec8c7b83a1de5be84"
+          },
+          {
+            "code": "200140373",
+            "name": "脊髓脊柱微创外科",
+            "dept1Code": "c9e1d07fa7326baec8c7b83a1de5be84"
+          },
+          {
+            "code": "200140374",
+            "name": "脊髓脊柱栓系专科",
+            "dept1Code": "c9e1d07fa7326baec8c7b83a1de5be84"
+          }
+        ]
+      },
+      {
+        "code": "b4c9dfe677ee9ad638df8f67587520e5",
+        "name": "脑血管病外科",
+        "subList": [
+          {
+            "code": "200140301",
+            "name": "脑血管病外科",
+            "dept1Code": "b4c9dfe677ee9ad638df8f67587520e5"
+          },
+          {
+            "code": "200141565",
+            "name": "脑血管病介入外科",
+            "dept1Code": "b4c9dfe677ee9ad638df8f67587520e5"
+          }
+        ]
+      },
+      {
+        "code": "a7afe6b0325303f2ca9f6c66e8858a88",
+        "name": "内科",
+        "subList": [
+          {
+            "code": "200052974",
+            "name": "全科医学科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200116987",
+            "name": "日间诊疗科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200137035",
+            "name": "不明原因发热门诊",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200045256",
+            "name": "健康管理门诊",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002245",
+            "name": "内分泌科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002246",
+            "name": "血液科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002248",
+            "name": "心血管内科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002249",
+            "name": "风湿免疫科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002254",
+            "name": "呼吸与危重症医学科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002256",
+            "name": "皮肤科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002257",
+            "name": "中医科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002297",
+            "name": "针灸科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002252",
+            "name": "肌病科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002295",
+            "name": "康复医学科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002258",
+            "name": "医学心理科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002298",
+            "name": "营养科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          },
+          {
+            "code": "200002300",
+            "name": "高压氧科",
+            "dept1Code": "a7afe6b0325303f2ca9f6c66e8858a88"
+          }
+        ]
+      },
+      {
+        "code": "d4a80dff4262f5815eee0362515986cf",
+        "name": "肝胆胰外科医学部",
+        "subList": [
+          {
+            "code": "200052524",
+            "name": "肝脏外科与移植门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200052525",
+            "name": "胰腺炎门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200052526",
+            "name": "胆道外科门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200052527",
+            "name": "胰腺外科门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200052722",
+            "name": "肝移植门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200140259",
+            "name": "胆囊外科门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200140261",
+            "name": "肝胆胰介入治疗门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200140283",
+            "name": "肝胆胰外科普通诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200141591",
+            "name": "肝胆胰内镜治疗门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200002278",
+            "name": "肝胆胰外科门诊",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          },
+          {
+            "code": "200002265",
+            "name": "肝胆胰肿瘤外科",
+            "dept1Code": "d4a80dff4262f5815eee0362515986cf"
+          }
+        ]
+      },
+      {
+        "code": "e49eb1ee94e9796c94d3b28ee42e6a5a",
+        "name": "外科",
+        "subList": [
+          {
+            "code": "200052946",
+            "name": "组织再生与创面修复科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002269",
+            "name": "骨科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002270",
+            "name": "泌尿外科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002272",
+            "name": "胸外科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002273",
+            "name": "口腔科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002276",
+            "name": "眼科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002275",
+            "name": "耳鼻咽喉头颈外科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002279",
+            "name": "心脏大血管外科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002281",
+            "name": "妇产科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002282",
+            "name": "麻醉科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002283",
+            "name": "疼痛科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002284",
+            "name": "血管外科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          },
+          {
+            "code": "200002285",
+            "name": "整形修复科",
+            "dept1Code": "e49eb1ee94e9796c94d3b28ee42e6a5a"
+          }
+        ]
+      },
+      {
+        "code": "7c00dafaa9f97ad6db19e2ccf8901500",
+        "name": "妇产科",
+        "subList": [
+          {
+            "code": "200140292",
+            "name": "产科",
+            "dept1Code": "7c00dafaa9f97ad6db19e2ccf8901500"
+          },
+          {
+            "code": "200140293",
+            "name": "生殖医学中心",
+            "dept1Code": "7c00dafaa9f97ad6db19e2ccf8901500"
+          },
+          {
+            "code": "200140296",
+            "name": "妇科肿瘤",
+            "dept1Code": "7c00dafaa9f97ad6db19e2ccf8901500"
+          },
+          {
+            "code": "200140297",
+            "name": "普通妇科",
+            "dept1Code": "7c00dafaa9f97ad6db19e2ccf8901500"
+          },
+          {
+            "code": "200140298",
+            "name": "计划生育门诊",
+            "dept1Code": "7c00dafaa9f97ad6db19e2ccf8901500"
+          },
+          {
+            "code": "200140375",
+            "name": "早孕门诊",
+            "dept1Code": "7c00dafaa9f97ad6db19e2ccf8901500"
+          }
+        ]
+      },
+      {
+        "code": "c3257d9b142b021330f4c0f03586155d",
+        "name": "儿科",
+        "subList": [
+          {
+            "code": "200056754",
+            "name": "儿童心脏外科",
+            "dept1Code": "c3257d9b142b021330f4c0f03586155d"
+          },
+          {
+            "code": "200056780",
+            "name": "儿童神经外科",
+            "dept1Code": "c3257d9b142b021330f4c0f03586155d"
+          },
+          {
+            "code": "200056891",
+            "name": "儿童泌尿外科",
+            "dept1Code": "c3257d9b142b021330f4c0f03586155d"
+          },
+          {
+            "code": "200127038",
+            "name": "儿童康复",
+            "dept1Code": "c3257d9b142b021330f4c0f03586155d"
+          },
+          {
+            "code": "200042100",
+            "name": "儿童普通外科",
+            "dept1Code": "c3257d9b142b021330f4c0f03586155d"
+          },
+          {
+            "code": "200002250",
+            "name": "儿童内科",
+            "dept1Code": "c3257d9b142b021330f4c0f03586155d"
+          },
+          {
+            "code": "200002274",
+            "name": "新生儿外科",
+            "dept1Code": "c3257d9b142b021330f4c0f03586155d"
+          },
+          {
+            "code": "200002244",
+            "name": "儿童骨科",
+            "dept1Code": "c3257d9b142b021330f4c0f03586155d"
+          }
+        ]
+      },
+      {
+        "code": "eb89d3cd9db56d8cc3e29109aed61f6b",
+        "name": "口腔科",
+        "subList": [
+          {
+            "code": "200048493",
+            "name": "口腔内科",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          },
+          {
+            "code": "200048494",
+            "name": "口腔外科",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          },
+          {
+            "code": "200048495",
+            "name": "口腔正畸科",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          },
+          {
+            "code": "200048496",
+            "name": "口腔种植科",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          },
+          {
+            "code": "200048497",
+            "name": "儿童口腔",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          },
+          {
+            "code": "200048498",
+            "name": "口腔修复科",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          },
+          {
+            "code": "200048499",
+            "name": "老年口腔",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          },
+          {
+            "code": "200048500",
+            "name": "牙周黏膜科",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          },
+          {
+            "code": "200048510",
+            "name": "口腔洁治",
+            "dept1Code": "eb89d3cd9db56d8cc3e29109aed61f6b"
+          }
+        ]
+      },
+      {
+        "code": "5db3b90a0f0d57100b34b29b2700b6bf",
+        "name": "肿瘤中心",
+        "subList": [
+          {
+            "code": "200042388",
+            "name": "肿瘤内科",
+            "dept1Code": "5db3b90a0f0d57100b34b29b2700b6bf"
+          },
+          {
+            "code": "200002259",
+            "name": "介入放射科",
+            "dept1Code": "5db3b90a0f0d57100b34b29b2700b6bf"
+          },
+          {
+            "code": "200002260",
+            "name": "介入超声科",
+            "dept1Code": "5db3b90a0f0d57100b34b29b2700b6bf"
+          },
+          {
+            "code": "200002296",
+            "name": "放射治疗科",
+            "dept1Code": "5db3b90a0f0d57100b34b29b2700b6bf"
+          },
+          {
+            "code": "200002243",
+            "name": "肿瘤综合治疗门诊",
+            "dept1Code": "5db3b90a0f0d57100b34b29b2700b6bf"
+          }
+        ]
+      },
+      {
+        "code": "2affbaccf8876c7ffd3f8bb5317237da",
+        "name": "医技科室",
+        "subList": [
+          {
+            "code": "200002290",
+            "name": "放射科介入门诊",
+            "dept1Code": "2affbaccf8876c7ffd3f8bb5317237da"
+          },
+          {
+            "code": "200002289",
+            "name": "放射诊断科介入门诊",
+            "dept1Code": "2affbaccf8876c7ffd3f8bb5317237da"
+          },
+          {
+            "code": "200002293",
+            "name": "病理科",
+            "dept1Code": "2affbaccf8876c7ffd3f8bb5317237da"
+          },
+          {
+            "code": "200002292",
+            "name": "超声诊断科",
+            "dept1Code": "2affbaccf8876c7ffd3f8bb5317237da"
+          },
+          {
+            "code": "200002291",
+            "name": "核医学科",
+            "dept1Code": "2affbaccf8876c7ffd3f8bb5317237da"
+          },
+          {
+            "code": "200002294",
+            "name": "激光医学科",
+            "dept1Code": "2affbaccf8876c7ffd3f8bb5317237da"
+          },
+          {
+            "code": "200002299",
+            "name": "输血医学科",
+            "dept1Code": "2affbaccf8876c7ffd3f8bb5317237da"
+          }
+        ]
+      },
+      {
+        "code": "d693a9ba938e21593c7b215e90834043",
+        "name": "其他科室",
+        "subList": [
+          {
+            "code": "200140109",
+            "name": "药学门诊",
+            "dept1Code": "d693a9ba938e21593c7b215e90834043"
+          }
+        ]
+      },
+      {
+        "code": "5d79ecc2777355007afd242aaf3c9cdb",
+        "name": "老年医学科",
+        "subList": [
+          {
+            "code": "200129115",
+            "name": "老年心理与失眠",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200131971",
+            "name": "抗衰老门诊",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200133955",
+            "name": "肌少症-衰弱门诊",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200133956",
+            "name": "老年血液科",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200133957",
+            "name": "老年肾科",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200133958",
+            "name": "老年内分泌科",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200133959",
+            "name": "老年消化内科",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200133960",
+            "name": "老年神经内科",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200133961",
+            "name": "老年心血管内科",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200134005",
+            "name": "老年介入",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200134006",
+            "name": "老年肿瘤内科",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200134029",
+            "name": "老年呼吸内科",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          },
+          {
+            "code": "200135801",
+            "name": "认知障碍门诊",
+            "dept1Code": "5d79ecc2777355007afd242aaf3c9cdb"
+          }
+        ]
+      },
+      {
+        "code": "c62a4f52edd15ebdc3c59ab59670f921",
+        "name": "其他",
+        "subList": [
+          {
+            "code": "200042454",
+            "name": "戒烟门诊",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200041644",
+            "name": "综合内科",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200045314",
+            "name": "老年专科门诊",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200041632",
+            "name": "医务室",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200002241",
+            "name": "免疫学",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200002261",
+            "name": "高血压门诊",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200002242",
+            "name": "微循环",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200002303",
+            "name": "创面治疗中心",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200002302",
+            "name": "发热门诊",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200002301",
+            "name": "急诊科",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          },
+          {
+            "code": "200002271",
+            "name": "男科",
+            "dept1Code": "c62a4f52edd15ebdc3c59ab59670f921"
+          }
+        ]
+      }
+    ]
+  }
+}

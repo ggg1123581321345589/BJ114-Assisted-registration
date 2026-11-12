@@ -1,32 +1,34 @@
 {
-  "name": "辅助挂号软件v1.0.0",
-  "version": "1.0.1",
-  "as_of": "2026-11-12",
+  "schema_version": 1,
+  "version": "1.1.0",
+  "hash_strategy": "git_text_lf_sha256",
+  "hash_description": "SHA-256 of Git text blobs with LF normalization; binary images retain exact bytes. The audit normalizes CRLF to LF for Windows checkouts.",
+  "file_count": 777,
   "files": [
     {
       "path": ".gitattributes",
-      "bytes": 342,
-      "sha256": "4481944d5f336432a2cceffeded16a7b3ea68e74d03dcecbe815feb1a7ea809e"
+      "bytes": 322,
+      "sha256": "08960bef58041cd28af4d3a3760721268b717af328afdb8ee4cef3f6f89feb16"
     },
     {
       "path": ".gitignore",
-      "bytes": 678,
-      "sha256": "acc878913cfb01866c17c1bcc58a1ba4f9c63a55c4d5ea14bd8f8dc07e13d70c"
+      "bytes": 476,
+      "sha256": "81695438d4f3afd195bd8d204188591aa8f94d5baf6728aac6a8f45a380d840b"
     },
     {
       "path": "AssistedRegistration.pro",
-      "bytes": 586,
-      "sha256": "c50c056ecf7fc3d777a9812409e3017ca6d2b3b3db5c4f7fdee67766be2222d6"
+      "bytes": 752,
+      "sha256": "65c08d57f5379a0a7ebf896e95c94ffefdc7a7ff38814a1f5da96595758cf268"
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 1238,
-      "sha256": "01a6729d7d9a79bf8b9cd2bccda0f728f550c5366f2198cfc76fd7137f67301b"
+      "bytes": 1039,
+      "sha256": "a32bfc7aae4e7f6983e7d761b0cfcdc24ea45f359ceefcd8f7267242ee0b9e07"
     },
     {
       "path": "CMakeLists.txt",
-      "bytes": 2664,
-      "sha256": "4ee5889908673ee7fcd357afb27373cad46f1cbe402ef780e1ab23e18ddb5303"
+      "bytes": 2820,
+      "sha256": "fe24bba4239c72ea5348dbb9f2f181b99123e2a8eb3e7742a798d21ba2ec7d64"
     },
     {
       "path": "LICENSE",
@@ -35,13 +37,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 7000,
-      "sha256": "d976a68b0f27e22b34c8683f03dec7d6646a2eadf1738a32e0117fd2bf4e0023"
+      "bytes": 6226,
+      "sha256": "7b93c37c424b9584225324c86d3a5237b0217eb1721fca63704cb963bee28a85"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 1350,
-      "sha256": "df72d270af30f7a554fc5ebf2a6c74b53db1df06b7f2b01e999cea8384c499c7"
+      "bytes": 1875,
+      "sha256": "15d64fbef43bfd1764d1f784ed783f89718549a6a5dfbcf68c55e5881f8e2304"
     },
     {
       "path": "build.cmd",
@@ -50,8 +52,8 @@
     },
     {
       "path": "data/hospital_departments_snapshot.json",
-      "bytes": 2570245,
-      "sha256": "ad19c0b768ba54aebad42a74c194606bee7c88424cf1f0800cd062158dbf6533"
+      "bytes": 3855771,
+      "sha256": "789cddc690e56cc3c06a9f014be8deb949400bfa9b77ab60abebefa767d6210c"
     },
     {
       "path": "data/hospitals.csv",
@@ -59,24 +61,39 @@
       "sha256": "e2e3d27e53b6a5e49728a3271a332a66f797cd063dfa9968232d6cc142ab4ed4"
     },
     {
-      "path": "docs/免责声明.md",
-      "bytes": 1301,
-      "sha256": "3d33363d7f5a47fefa0c9b4094650e6e5e53eed98935170f41d610eb9d91dccc"
+      "path": "docs/images/feature-example-redacted.png",
+      "bytes": 142044,
+      "sha256": "59304cc26a87604a045f37239c99f3ec40cd7b89fc4efd0fac115d594ed7536d"
+    },
+    {
+      "path": "docs/免责协议.md",
+      "bytes": 1705,
+      "sha256": "686d212f71556bd5c474fbb5a389233ac480c3a5e77a1e9485b7ec4cc3b53db6"
     },
     {
       "path": "package-lock.json",
-      "bytes": 20910,
-      "sha256": "4206f97754d422d4004f4a51a06b795a634a7ccc0c02f2d49133885323e38ba8"
+      "bytes": 21557,
+      "sha256": "9db8b16e2d7edfd16ce19c864ce83248592abfdbd9a3723fb8c55ae79584ad26"
     },
     {
       "path": "package.json",
-      "bytes": 539,
-      "sha256": "0386b047bce8d223d55bc65906dcf53b06c5a106b462f356bf90f222f7c36a84"
+      "bytes": 707,
+      "sha256": "eb5c43a0bd501b8fb49accb98d96cea130aabad22540f3855e95c71c4b19fb1d"
     },
     {
       "path": "run.cmd",
-      "bytes": 318,
-      "sha256": "0c3e41a1548bddfb48b9816c4235e7f7cdcc2caa5787999904df7c16fe8e19f6"
+      "bytes": 205,
+      "sha256": "65c0307ecf9229d6b280cf4e7bbfec26d56444144c54561364aca157a49a403f"
+    },
+    {
+      "path": "runtime/booking_route_runtime.cjs",
+      "bytes": 15337,
+      "sha256": "2679f4e20afe8a4db53b0466685073d0eec5b5fb0ad3d583df5270abdbc97341"
+    },
+    {
+      "path": "runtime/encrypt_phone.cjs",
+      "bytes": 3127,
+      "sha256": "fb83a4b1906f0faa0213608719fc140196487667374b40a6ce6681f86c5c4641"
     },
     {
       "path": "runtime/helpers/canvas_method_named.cjs",
@@ -85,8 +102,8 @@
     },
     {
       "path": "runtime/helpers/child_window_runtime_20261109.cjs",
-      "bytes": 1754,
-      "sha256": "bc7591a4efc1e921328d3e27f90a1b9809f0476901db06fe8deaa0b5d81d3651"
+      "bytes": 1728,
+      "sha256": "09f03eb55a6484684b63ccaea3694931ffe3c08ce3de064fa2a9c12af634193c"
     },
     {
       "path": "runtime/helpers/clock_offset_audit/apply_clock_offset.cjs",
@@ -105,8 +122,8 @@
     },
     {
       "path": "runtime/helpers/document_all_runtime_20261109_checked_lazy.cjs",
-      "bytes": 4541,
-      "sha256": "4e20a90cb27030396b13736a8cf58bc2cfc89ae555d75113856d5afa85185c90"
+      "bytes": 4503,
+      "sha256": "7da95bbe1650ad7c390582f72a5408ec6ccf3b2ef77a198d6c89c5736a1d088f"
     },
     {
       "path": "runtime/helpers/event_constructor_runtime_20261109.cjs",
@@ -115,13 +132,13 @@
     },
     {
       "path": "runtime/helpers/form_named_properties_runtime_20261109.cjs",
-      "bytes": 3050,
-      "sha256": "388a982adfea950672ba2a870bd4b5a14207491441eb27474d63b4e59fbdd1c9"
+      "bytes": 3024,
+      "sha256": "a28792cdc2329694a051fd2c638f7ede09b4dffcb1ba9eccfda517472666ffd1"
     },
     {
       "path": "runtime/helpers/indexeddb_runtime.cjs",
-      "bytes": 1238,
-      "sha256": "ba11f98d8a569498e5d0a8d0aec4558c853b907c976d016dfc7c9a1869df0464"
+      "bytes": 1219,
+      "sha256": "50dfdfb031ef793d7215b51829be3f3d257d4bf7cf62fe2439a54735d3fef27b"
     },
     {
       "path": "runtime/helpers/network_information_runtime_20261109.cjs",
@@ -141,7 +158,12 @@
     {
       "path": "runtime/helpers/xpath_private_ast_runtime_20261109.cjs",
       "bytes": 1656,
-      "sha256": "c7c6e74bf4b4f340c6970ccb6f7e11e9a9edf405ce64fe894751a02ff90038f3"
+      "sha256": "b00cb5500654abc0d8842b5563fe38059e7333cfabdfea3964ca1c4717384d68"
+    },
+    {
+      "path": "runtime/legacy_readonly_runtime.cjs",
+      "bytes": 15527,
+      "sha256": "d68e812d3a5b4c54793f77eb29134f2e96ffc7c26d7dea1ec22b63ee04b4655f"
     },
     {
       "path": "runtime/public_headers.json",
@@ -150,63 +172,123 @@
     },
     {
       "path": "runtime/query_runtime.cjs",
-      "bytes": 14067,
-      "sha256": "1149e362f623c975629acfafabba09fc5004f5687ce42790b41e1c7f4437353f"
-    },
-    {
-      "path": "runtime/self-test.cjs",
-      "bytes": 4796,
-      "sha256": "8277c8e8b0aaed78b8f49547ec910195b821e43aa8fc1719eb45c172b5350655"
+      "bytes": 14019,
+      "sha256": "03e3452ba38e5d382ad4565dcb320b8a637edf62bce774d1c4ed22fab4b0f5d1"
     },
     {
       "path": "scripts/check-source-release.py",
-      "bytes": 1975,
-      "sha256": "214f7dbfb2eadd18d27d07ffd8a7542ccf23bb76737a4e102495921c7ec5644a"
+      "bytes": 7586,
+      "sha256": "67107bd5cde46a633f5ac6d611c3c6a2e3d2f1131857e3b36a0a39ecc88c4b5c"
+    },
+    {
+      "path": "src/HospitalAvailabilityNative.pro",
+      "bytes": 37,
+      "sha256": "19b952c07707365c496adda68d479319f4ca379d1f016df202c30bb0ca6db1fa"
+    },
+    {
+      "path": "src/booking_calendar.h",
+      "bytes": 13286,
+      "sha256": "99e8b56ebaa9bf836ccf1f509838a6063266f53e404f25667cec9d71522fb07c"
+    },
+    {
+      "path": "src/booking_service.cpp",
+      "bytes": 44746,
+      "sha256": "e122cc4444c78fa22f571521084c01d16c7171ed44214d6afe0d4f485c4276d2"
+    },
+    {
+      "path": "src/booking_service.h",
+      "bytes": 1481,
+      "sha256": "d6defc983d803bd7837b3ed2579b045829609a6cf72cf10ca5730aa176dace22"
+    },
+    {
+      "path": "src/booking_table_tools.h",
+      "bytes": 8066,
+      "sha256": "a15b026e1c8858cc5e7d209ac79386a05e541b9e1ee5e6e485339929d2d1f26a"
+    },
+    {
+      "path": "src/legacy_availability.h",
+      "bytes": 17677,
+      "sha256": "713ff35473e6f162fb52acb2cc62a8d70435595eadb5a8350275c4cb6d7df24a"
+    },
+    {
+      "path": "src/legacy_departments.h",
+      "bytes": 4016,
+      "sha256": "7f028f659af89087b7a31e81df71cdaeab1e2b90bb8475e3cd111ce4c60091cb"
     },
     {
       "path": "src/main.cpp",
-      "bytes": 27625,
-      "sha256": "c15e709a385a309f76d4f3441ff1b25b8bd735ef52a81ec3aa8be299d623c329"
+      "bytes": 57157,
+      "sha256": "bcc3dc68f0ab8641262a70c9d643125e5df846e385d1af0888ef7c2e1e376a21"
     },
     {
       "path": "src/native_backend.cpp",
-      "bytes": 35321,
-      "sha256": "090269d643aaa4a1e877411c9f6c1c829552bc6286b23aef6395edf22e8485fd"
+      "bytes": 45398,
+      "sha256": "486ccf649f70985c734bfb4759a417fd05ebf06347ab41b0616b70c45538510f"
     },
     {
       "path": "src/native_backend.h",
-      "bytes": 864,
-      "sha256": "e74c304db93ba2c655c87573dd68e784b141b255478904139e3dc3dacc49bb81"
+      "bytes": 1231,
+      "sha256": "241b167386340de69f72ecff2af847cabe122b9f3cf53fa223d8df1df30cb026"
     },
     {
       "path": "src/native_service.cpp",
-      "bytes": 61121,
-      "sha256": "f22f8f302d4a31b5f1baa6f8c307a946f752f16a06276646f47cd2d3e16e0d74"
+      "bytes": 71359,
+      "sha256": "0b03a0a82abf6a29d8c7e6ddc8ff6f642f014a1c959e4136ae46be46f4826857"
     },
     {
       "path": "src/native_service.h",
-      "bytes": 1356,
-      "sha256": "1b236dbe4a19858a374bd53fe2a2081861f1a08a767fc998b8ef02a9033ffb71"
+      "bytes": 1681,
+      "sha256": "ed0f1167c4d99797b2c7f1918d0f34d2ef4faed6ecabb7841b95290d338f40ee"
     },
     {
-      "path": "tests/backend_offline_probe.cpp",
-      "bytes": 8044,
-      "sha256": "c5202101f6b4e8639f3ca531ec65521ae70ebf4a28dabb00531d01f830bdafc4"
+      "path": "src/runtime_paths.h",
+      "bytes": 456,
+      "sha256": "acb3283ecc2238d33e3e2af32cd7de87204071830fbf2fa25d0e63c46eaf0cd4"
     },
     {
-      "path": "tests/branding_probe.cpp",
-      "bytes": 1745,
-      "sha256": "1f25d060e2c9e19404172b8dffd4257a7629d4686b0fbb9893ec200302f8b5bf"
+      "path": "tests/backend_booking_offline_probe.cpp",
+      "bytes": 12827,
+      "sha256": "d568958ffe12ff39ca59535b70aff9f15520b2a1778c2e1f66e48d490e197a08"
     },
     {
-      "path": "tests/native_service_offline_test.cpp",
-      "bytes": 65563,
-      "sha256": "25a886295d8b2d91591770fa825a4455f1b49074cc1ab4f5646cda791ab38380"
+      "path": "tests/booking_ui_offline_test.cpp",
+      "bytes": 18301,
+      "sha256": "c217cc3df15c55d78fd18f436fae0dac703ab271578ae4c9ed35aab5228531f7"
     },
     {
-      "path": "tests/native_ui_offline_test.cpp",
-      "bytes": 19877,
-      "sha256": "c1a86979b9b126dc9b9cdb6512fb55df973b0c3f631071940f55963a82c28cdc"
+      "path": "tests/build-local.pro",
+      "bytes": 1099,
+      "sha256": "a08e2d297e9f1d993f259d80784fa47e25f6ada224426962fb5559922525e890"
+    },
+    {
+      "path": "tests/fixtures/legacy_departments_public.json",
+      "bytes": 23406,
+      "sha256": "ee11a0713daec99ac28d4b3d8197ff01449783a2ada89712c5b6af96a2fc88f3"
+    },
+    {
+      "path": "tests/legacy_departments_offline_test.cpp",
+      "bytes": 6235,
+      "sha256": "a37ab771d7331b20d65e37549b7f781f1f2206781860205ac739a977d30c0f4c"
+    },
+    {
+      "path": "tests/legacy_parser_offline_test.cpp",
+      "bytes": 12165,
+      "sha256": "8298ec97f8c511c5e2b087a2307b7f3a290adb0b53ea8ff55cb1bba35f7d5705"
+    },
+    {
+      "path": "tests/legacy_query_offline_test.cpp",
+      "bytes": 9583,
+      "sha256": "9916647e503b72e81d53200e2b93abbf0f0514e49a45d4379455ff30b602bfe3"
+    },
+    {
+      "path": "tests/legacy_service_offline_test.cpp",
+      "bytes": 17485,
+      "sha256": "efa5f18089f813c79d1444c5f5a4533a16ca8a5664c205063c9ab33b279adb41"
+    },
+    {
+      "path": "tests/preview_probe.cpp",
+      "bytes": 5016,
+      "sha256": "2dc01238c06045a56a16843d24dd1cb1e5775185cf002bd6d880df228ee6ecb9"
     },
     {
       "path": "vendor/jsdom/LICENSE.txt",
@@ -3808,15 +3890,5 @@
       "bytes": 1657,
       "sha256": "7d6341e1b91bbab2bbe0c43fcf2cc6cd49550c6484d321bcdd80ca3a8e5de47e"
     }
-  ],
-  "excluded": [
-    "node_modules",
-    "build outputs",
-    "EXE/DLL",
-    "capture/session output",
-    "npm caches"
-  ],
-  "original_source_preserved": true,
-  "latest_change": "v1.0.1: Beijing UTC+8 query-time display, raw timestamp tooltip, 14 additional UI regressions, and synchronized app/package/build/documentation branding.",
-  "hash_representation": "Git blob bytes after .gitattributes clean normalization; pending worktree verified with git hash-object --stdin-paths; after commit verify with git show HEAD:path."
+  ]
 }

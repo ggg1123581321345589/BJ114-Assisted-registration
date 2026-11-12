@@ -22,9 +22,11 @@ private:
  QString root_; std::unique_ptr<Broker> broker_; QElapsedTimer born_; int session_=0;
  std::atomic_bool *cancel_=nullptr;
  QThread *owner_=nullptr; bool busy_=false,closed_=false; QString currentCode_,renewReason_,cacheWarning_;
- bool reused_=false; QHash<QString,QJsonObject> metadata_; QSet<QString> invalidated_; QJsonArray responses_;
- void prepare(int required);
- QJsonObject queryJson(const QString &method,const QString &path,const QJsonObject &body=QJsonObject());
+ bool reused_=false; QHash<QString,QJsonObject> metadata_; QSet<QString> invalidated_; QJsonArray responses_; QHash<QString,bool> hospitalNewRoute_;
+ void prepare(int required,bool allowBootstrap=true);
+ QJsonObject queryJson(const QString &method,const QString &path,const QJsonObject &body=QJsonObject(),bool requirePrepared=false);
+ QJsonObject queryLegacyJson(const QString &method,const QString &path,const QJsonObject &body=QJsonObject());
+ QJsonArray legacyAvailability(const QString &code,const QJsonObject &department,const QString &date,QJsonObject &report);
  QJsonArray departments(const QString &code,bool force,bool allowNetwork,bool freshNetwork,QJsonObject &metadata);
 };
 }

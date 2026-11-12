@@ -1,123 +1,96 @@
-# 辅助挂号软件v1.0.1
+# 辅助挂号软件 v1.1.0
 
-## 免责说明
+## 免责协议
 
-本软件仅用于辅助查询公开号源，不提供自动预约或代挂号服务，不保证号源可用或挂号成功。信息可能延迟或变化，请以医院或官方平台为准，并通过官方渠道办理挂号。请合理使用，遵守平台规则，勿用于倒号或其他违规用途。完整说明见 [免责声明](docs/免责声明.md)。
+本软件为非官方辅助工具，供用户本人查询号源并在人工确认后提交一次预约，不保证号源可用或挂号成功。请遵守医院及官方平台规则，核对就诊人、就诊卡、日期、费用及取退号要求；预约和支付结果以官方平台为准。验证码须由本人输入，遇到提交结果未知时请先核对官方订单，勿重复提交。请妥善保护个人信息，勿用于倒号、代抢或其他违规用途。
 
-这是 C++ / Qt5 号源查询版的源码。窗口标题为“辅助挂号软件v1.0.1”，界面第一行为“免责说明”。源码仓库不包含已编译程序、第三方 DLL、本机抓包或个人会话。
+详细使用边界见 [免责协议](docs/免责协议.md)。这段文字用于说明产品用途与风险，不代表能够免除依法应承担的责任。
 
-## 功能
+## 当前版本
 
-- 按医院名称、地区或编码搜索医院。
-- 从本地公开快照加载科室，支持全院科室采集、停止与断点续跑。
-- 按医院、科室和单日查询实时号源，展示医生、时段、剩余号源、状态与查询时间。
-- 查询时间固定按北京时间（UTC+8）显示为 yyyy-MM-dd HH:mm:ss；悬停保留原始时间，无效或缺少时区时显示“未知”。
-- 后台处理网络任务，支持连接预热和停止操作。
-- 可选成功后重复刷新，间隔为 60–3600 秒；查询失败后停止重复刷新。
+这是辅助挂号软件 v1.1.0 的 C++ / Qt5 源码。上传及打包时排除可执行文件、构建产物、SDK、第三方 DLL、node_modules、会话、抓包和个人就诊资料。
 
-医院、科室目录属于本地资料，可能过时；实时号源在查询时获取，不将旧号源缓存当作新结果。切换医院、科室或日期会清空当前号源展示。本版本没有登录、短信验证、订单提交或自动抢号功能。
+### 已包含的功能
 
-## 源码结构
+- 按医院名称、地区或编码查找医院，加载本地公开科室目录并查询号源。
+- 日历可选择多个查询日期，依次查询并汇总结果；可以停止后续查询。
+- 结果表支持排序和多条件筛选。医生范围、日期与可预约行以实际查询及官方核验结果为准。
+- 用户手动登录、本人输入验证码，选择就诊人、就诊卡和号源，再经过确认提交一次预约。
+- 顶部显示“免责协议”；窗口标题为“辅助挂号软件 v1.1.0”。
 
-```text
-src/                      C++ 窗口、后台服务和 HTTP 传输源码
-runtime/                  查询所需 JavaScript 运行时与兼容适配器
-vendor/jsdom/             当前使用的 jsdom 源码及原许可
-data/                     公开医院目录及可选科室快照
-tests/                    离线 C++ 测试
-docs/                     使用说明与免责声明
-CMakeLists.txt            CMake 工程
-AssistedRegistration.pro  qmake 工程
-build.cmd                 Windows 构建入口
-run.cmd                   Windows 启动入口
-package.json              JavaScript 依赖与离线自检命令
-package-lock.json         npm 依赖锁定文件
-THIRD_PARTY_NOTICES.md     第三方组件说明
-```
+当前没有定时提交功能，也不会自动发送短信、自动输入验证码或自动完成支付。请自行核对官方订单，尤其不要在提交结果未知时连续重试。
 
-程序需要 `data/hospitals.csv`。`data/hospital_departments_snapshot.json` 是公开科室快照，可由界面的“采集全院科室（断点续跑）”生成；采集访问网络，应合理使用。运行生成的缓存、采集进度及日志位于 `output/`，不属于待上传源码。
+### 功能示意图
+
+![功能示意图（个人信息已遮盖）](docs/images/feature-example-redacted.png)
+
+此图来自使用示例，手机号、就诊人、就诊卡已实体遮盖。它仅用于说明功能；标题与布局以 v1.1.0 为准，不能将此图当作新版实际截图。
+
+### 已知限制
+
+- 科室日历行不等同于医生号源；没有实际可预约时段的行不能直接用于预约。剩余号源为空时不会擅自当作 0。
+- 本地目录快照包含 308 家医院，仅用于目录加载；实时号源、费用、预约和支付结果均以官方平台为准。
+- 离线测试只能验证本地逻辑及模拟输入。本次整理不访问医院站点、不发送短信、不进行真实登录或预约；离线通过不等于站点当前可用。
+
+## 目录
+
+| 路径 | 内容 |
+| --- | --- |
+| src/ | C++ 主界面、查询服务、预约服务和后端桥接 |
+| runtime/ | Node JSONL 子进程、公开请求头和所需兼容模块 |
+| data/ | 公开医院 CSV 和科室目录快照 |
+| vendor/jsdom/ | 与运行时匹配的 jsdom 31.0.0 源码及 MIT 许可 |
+| tests/ | 本地离线回归测试；具体入口以文件为准 |
+| AssistedRegistration.pro | Qt qmake 构建配置 |
+| build.cmd / run.cmd | Windows 构建与启动入口 |
 
 ## 开发环境
 
-- Windows x64，支持 C++17 的 MSVC 工具链（Visual Studio / Build Tools）。
-- 与 MSVC 工具链及架构匹配的 Qt 5.15 SDK，含 Core、Gui、Widgets、Network；离线 UI 测试另需 Qt Test。
-- libcurl 开发库，需与所选编译器、架构和运行库兼容。
-- Node.js 与 npm：版本要求见 `package.json` 的 `engines.node`。
-- CMake 3.20 或更新版本；使用 qmake 工程时需要 qmake、nmake。
+- Windows x64；MSVC x64 C++17 工具链与 Windows SDK。
+- Qt 5.15 的 MSVC x64 SDK，包含 Core、Gui、Widgets、Network；libcurl 的头文件、链接库和配套运行 DLL。
+- Node.js：package.json 声明 ^24.15.0 或 >=26.0.0，本机整理使用 Node 24.16.0。还需通过应用启动时的 V8 能力检查；其他 Node 版本不在本次验证承诺内。
+- npm 和 Python 3（Python 仅用于部分源码检查/测试脚本，应用本身不依赖 Python）。
 
-C++ 负责界面与业务，查询运行时仍依赖 Node.js，不是无需任何运行时依赖的单文件程序。源码包不包含 Qt、libcurl 或 Node 安装程序。
+Qt、libcurl、编译器与 Node 的二进制不在源码中。应从各项目的官方渠道自行安装，并遵守各自许可。
 
-## 构建与启动
+## 构建与运行
 
-在仓库根目录打开命令提示符，设置当前机器的 SDK 路径，再安装锁定依赖并构建：
+在 x64 Native Tools Command Prompt 中进入本仓库。将 QT_ROOT 与 CURL_ROOT 设置为各自 SDK 前缀；需要时将 VCVARS64 指向 vcvars64.bat。路径可以按实际安装位置修改：
 
-```bat
-set "QT_ROOT=C:\Qt\5.15.2\msvc2019_64"
-set "CURL_ROOT=C:\SDK\curl"
-npm ci
-build.cmd
-run.cmd
-```
+    set QT_ROOT=C:\Qt\5.15.2\msvc2019_64
+    set CURL_ROOT=C:\SDK\curl
+    set PATH=%QT_ROOT%\bin;%CURL_ROOT%\bin;%PATH%
+    npm ci
+    npm run check
+    npm run test:crypto
+    build.cmd --no-pause
+    run.cmd
 
-路径仅为占位示例，须替换为自己的实际安装目录。`build.cmd` 使用本机 MSVC 环境和 Qt 工具；也可在已配置的 x64 Native Tools 命令提示符中运行。若使用自定义 Visual Studio 安装路径，可设置 `VCVARS64` 为对应的 `vcvars64.bat`。编译成功后显示 EXE 的绝对路径和大小，目标是仓库内的 `bin/AssistedRegistration.exe`，不是仓库根目录。完整输出写入 `build.log`；失败时也保留窗口，须查看日志中的实际错误，不能把旧 EXE 当作新构建。命令行自动化可使用 `build.cmd --no-pause`。Qt 插件与依赖 DLL 必须可供 Windows 加载，发布运行目录时还需按所用 SDK 部署；不能只复制 exe。
+构建输出为 bin/AssistedRegistration.exe。启动时应保留仓库的 data、runtime 与安装后的 node_modules，或用 --project-root 指定完整项目根目录。不要把 EXE 单独移走。应用优先使用 NODE_EXECUTABLE 指定的 Node，其次使用 runtime/node/node.exe，最后查找 PATH（以 src/runtime_paths.h 为准）。
 
-`run.cmd` 以仓库根目录作为 `--project-root`。程序优先使用 `NODE_EXECUTABLE` 指定的 Node；未指定时先查找运行目录的 `runtime/node/node.exe`，再从 PATH 查找。可在启动前设置：
+build.log 用于诊断本机编译错误，不属于发布源码。Windows 运行目录另需匹配的 Qt、libcurl 和 MSVC 运行库；本仓库不将开发机依赖混入源码包。
 
-```bat
-set "NODE_EXECUTABLE=C:\Program Files\nodejs\node.exe"
-run.cmd
-```
+## 运行时与隐私
 
-不要移动或修改 `runtime/query_runtime.cjs` 后忽略后端的完整性校验；运行时源码与 C++ 中记录的摘要必须一致。
+booking_route_runtime.cjs、query_runtime.cjs、legacy_readonly_runtime.cjs 来自当前实际使用的运行时，仅调整模块定位以去除开发机路径。helpers 也保留原实现并使用包定位。公开请求头文件只包含 Accept、语言、User-Agent 和 Sec-Fetch 类字段，不包含 Cookie、Authorization、请求正文或个人会话。
 
-## 使用步骤
+手机号加密使用 MIT 开源 sm-crypto 适配器，保持公开公钥、SM2 C1C3C2 格式及 04 点前缀。未重新分发许可不明确的站点压缩加密脚本。合成输入自检不发送网络请求，不代表服务器接受测试密文。
 
-1. 启动程序并阅读顶部免责说明；启用连接预热时等待连接准备完成。
-2. 搜索并选中医院，加载科室。未覆盖所选医院时，按界面提示采集科室资料。
-3. 选择科室和查询日期，点击“查询实时号源”。
-4. 如需重复刷新，勾选相应选项并设置不少于 60 秒的间隔；可随时点击“停止”。
-5. 挂号请前往医院或官方平台完成，并再次核对实际号源。
+登录和预约需要处理个人信息；不要公开协议日志、Cookie、令牌、手机号、身份证、就诊卡或订单。请在本人控制的环境中使用，不要将敏感文件加入版本控制。
 
-网站响应、访问限制或接口调整可能导致查询失败。出现失败时根据界面提示处理；不要把空白、旧记录或失败状态视为医院没有号源。
+## 开发提交
 
-## 离线检查
+修改后先运行本地构建、离线测试和源码审计，再检查待提交差异。复用现有仓库的分支和远端，仅暂存本次修改的文件：
 
-JavaScript 语法与运行时自检：
+    python scripts/check-source-release.py
+    git diff --check
+    git add PATH_TO_CHANGED_FILE
+    git diff --cached --check
+    git diff --cached --stat
+    git commit -m "Describe the source change"
 
-```bat
-npm run check
-npm test
-```
+涉及源码文件变化时，应同步更新 SOURCE_MANIFEST.json 并重新执行审计。提交前确认没有加入个人资料、会话、抓包或构建产物。
 
-启用 CMake 测试后运行 C++ 离线测试：
+## 许可
 
-```bat
-cmake -S . -B build-cmake -DBUILD_TESTING=ON -DCMAKE_PREFIX_PATH="%QT_ROOT%" -DCURL_ROOT="%CURL_ROOT%"
-cmake --build build-cmake --config Release
-ctest --test-dir build-cmake -C Release --output-on-failure
-```
-
-本机已验证 qmake + nmake 构建，以及纯英文路径隔离副本的 CMake 构建和 4 个 CTest 测试。当前机器的 CMake + NMake 在中文路径生成编译探针时出现 PDB 路径编码错误；使用 CMake 时建议将完整源码放入纯英文路径，并与 qmake 使用不同构建目录。离线测试使用本地测试数据，不查询医院网站，也不证明某一时刻线上号源可用。实际测试结果以本次构建输出和验证记录为准。
-
-## 上传 GitHub
-
-请将本目录作为仓库根目录。`.gitignore` 已排除构建产物、`node_modules/`、运行输出和常见本机文件。上传前检查暂存列表，确认没有账号、Cookie、Token、个人信息、抓包、日志或私有配置。不要把整个开发工作目录一起上传。
-
-下面是供作者自行执行的命令，`REPOSITORY_URL` 替换为自己的 GitHub 仓库地址：
-
-```bat
-git init
-git add .
-git status --short
-git diff --cached --stat
-git commit -m "Release auxiliary registration query v1.0.1"
-git branch -M main
-git remote add origin REPOSITORY_URL
-git push -u origin main
-```
-
-若已有 Git 仓库或远端配置，请使用既有配置。
-
-## 许可与第三方组件
-
-项目代码按仓库中的 [MIT License](LICENSE) 发布，`package.json` 已与该许可保持一致。第三方组件仍适用其原有许可，详见 [第三方组件说明](THIRD_PARTY_NOTICES.md) 和各组件许可文件。
+本项目沿用原 GitHub 仓库的 MIT 许可，见 [LICENSE](LICENSE)。第三方源码及依赖保留各自许可，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。MIT 许可并不授予医院名称、数据、商标或官方平台的额外权利，也不构成平台使用授权。

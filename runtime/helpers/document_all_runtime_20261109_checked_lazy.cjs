@@ -6,8 +6,8 @@ const documents=new WeakMap(),brands=new WeakMap(),installations=new WeakMap();
 function makeUndetectable(){try{v8.setFlagsFromString('--allow-natives-syntax');return vm.runInNewContext('%GetUndetectable()');}finally{v8.setFlagsFromString('--no-allow-natives-syntax');}}
 module.exports=function installDocumentAll(w){
  if(installations.has(w))return installations.get(w);
- const collection=require('../../node_modules/jsdom/lib/generated/idl/HTMLCollection.js');
- const idl=require('../../node_modules/jsdom/lib/generated/idl/utils.js');
+ const collection=require('jsdom/lib/generated/idl/HTMLCollection.js');
+ const idl=require('jsdom/lib/generated/idl/utils.js');
  const checked=makeUndetectable();if(typeof checked!=='undefined'||Boolean(checked)||!(checked==null)||checked===undefined)throw Error('undetectable_contract_failed');let closed=false;try{w.Function('return %GetUndetectable();');}catch(e){closed=e.name==='SyntaxError';}if(!closed)throw Error('native_syntax_flag_not_closed');
  const proto=Object.create(w.Object.prototype);
  function requireState(receiver){const state=brands.get(receiver);if(!state)throw new w.TypeError('Illegal invocation');return state;}

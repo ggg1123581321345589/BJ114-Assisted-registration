@@ -1,7 +1,7 @@
 {
   "name": "辅助挂号软件v1.0.0",
-  "version": "1.0.0",
-  "as_of": "2026-11-11",
+  "version": "1.0.1",
+  "as_of": "2026-11-12",
   "files": [
     {
       "path": ".gitattributes",
@@ -20,13 +20,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 682,
-      "sha256": "df002e679fcf83e64f62ec3b27946e052463d315fc63314fe0f3113fe532f6c1"
+      "bytes": 1238,
+      "sha256": "01a6729d7d9a79bf8b9cd2bccda0f728f550c5366f2198cfc76fd7137f67301b"
     },
     {
       "path": "CMakeLists.txt",
       "bytes": 2664,
-      "sha256": "c21c7c018d21d2992bf8330b20da01596a1e855942f88b44da68a171c39f2c5a"
+      "sha256": "4ee5889908673ee7fcd357afb27373cad46f1cbe402ef780e1ab23e18ddb5303"
     },
     {
       "path": "LICENSE",
@@ -35,8 +35,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 6849,
-      "sha256": "b8ecdf421d18b2c24c335274be841f70c67a5bde8535a9f260aaac3249af9722"
+      "bytes": 7000,
+      "sha256": "d976a68b0f27e22b34c8683f03dec7d6646a2eadf1738a32e0117fd2bf4e0023"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -61,17 +61,17 @@
     {
       "path": "docs/免责声明.md",
       "bytes": 1301,
-      "sha256": "3ca0905cdc271ddb3a77a4c72e92d8718983f25c9ce91e58037c848bb11f06e4"
+      "sha256": "3d33363d7f5a47fefa0c9b4094650e6e5e53eed98935170f41d610eb9d91dccc"
     },
     {
       "path": "package-lock.json",
       "bytes": 20910,
-      "sha256": "4dac0a2b0ae7186ade16d1b7ce88fa7976ef312c315c9051615e8c0ff91ae82e"
+      "sha256": "4206f97754d422d4004f4a51a06b795a634a7ccc0c02f2d49133885323e38ba8"
     },
     {
       "path": "package.json",
       "bytes": 539,
-      "sha256": "58830886a283388721375f7b638688a29fa53369c3c3417d0d7afd87411cf8a1"
+      "sha256": "0386b047bce8d223d55bc65906dcf53b06c5a106b462f356bf90f222f7c36a84"
     },
     {
       "path": "run.cmd",
@@ -161,12 +161,12 @@
     {
       "path": "scripts/check-source-release.py",
       "bytes": 1975,
-      "sha256": "938bb1b91d0e938e4e19b34c658f3248f4e855ebfaef99224faf1fd9587addfe"
+      "sha256": "214f7dbfb2eadd18d27d07ffd8a7542ccf23bb76737a4e102495921c7ec5644a"
     },
     {
       "path": "src/main.cpp",
-      "bytes": 26849,
-      "sha256": "1a958f7380e854ed8ae3c468fa024b75b1c64264fbc5234f0ad3216e3b884f8f"
+      "bytes": 27625,
+      "sha256": "c15e709a385a309f76d4f3441ff1b25b8bd735ef52a81ec3aa8be299d623c329"
     },
     {
       "path": "src/native_backend.cpp",
@@ -196,7 +196,7 @@
     {
       "path": "tests/branding_probe.cpp",
       "bytes": 1745,
-      "sha256": "2a23e4751450f79cd2f0f168f3d0f908c50d587b71025cc833f5a285e23033d7"
+      "sha256": "1f25d060e2c9e19404172b8dffd4257a7629d4686b0fbb9893ec200302f8b5bf"
     },
     {
       "path": "tests/native_service_offline_test.cpp",
@@ -205,8 +205,8 @@
     },
     {
       "path": "tests/native_ui_offline_test.cpp",
-      "bytes": 17929,
-      "sha256": "7f8dbe825ad37b1fd9522203f71914dea8f3f0ea62d51ff4c9a61bbbaa816e2a"
+      "bytes": 19877,
+      "sha256": "c1a86979b9b126dc9b9cdb6512fb55df973b0c3f631071940f55963a82c28cdc"
     },
     {
       "path": "vendor/jsdom/LICENSE.txt",
@@ -3817,6 +3817,6 @@
     "npm caches"
   ],
   "original_source_preserved": true,
-  "latest_change": "Complete GitHub source folders; preserve repository MIT LICENSE; exclude build log.",
-  "hash_representation": "Git blob bytes after .gitattributes text normalization; verify with git show HEAD:path."
+  "latest_change": "v1.0.1: Beijing UTC+8 query-time display, raw timestamp tooltip, 14 additional UI regressions, and synchronized app/package/build/documentation branding.",
+  "hash_representation": "Git blob bytes after .gitattributes clean normalization; pending worktree verified with git hash-object --stdin-paths; after commit verify with git show HEAD:path."
 }

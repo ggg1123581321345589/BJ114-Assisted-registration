@@ -22,7 +22,7 @@ def main():
     for name in ('src/main.cpp','src/native_backend.cpp','src/native_backend.h','src/native_service.cpp','src/native_service.h','data/hospitals.csv','runtime/query_runtime.cjs','runtime/public_headers.json','package-lock.json','vendor/jsdom/LICENSE.txt','README.md','CMakeLists.txt','AssistedRegistration.pro'):
         if not (ROOT/name).is_file():issues.append('missing: '+name)
     main_cpp=(ROOT/'src/main.cpp').read_text(encoding='utf-8')
-    if '辅助挂号软件v1.0.0' not in main_cpp or '免责说明' not in main_cpp:issues.append('branding missing')
+    if '辅助挂号软件v1.0.1' not in main_cpp or '免责说明' not in main_cpp:issues.append('branding missing')
     print(json.dumps({'status':'PASS' if not issues else 'FAIL','files':len(files()),'issues':issues},ensure_ascii=False))
     return bool(issues)
 if __name__=='__main__':sys.exit(main())

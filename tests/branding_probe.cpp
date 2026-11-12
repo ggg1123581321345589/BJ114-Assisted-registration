@@ -18,7 +18,7 @@ int main(int argc,char **argv){
  auto *first=qobject_cast<QLabel*>(layout->itemAt(0)->widget());
  auto *second=qobject_cast<QLabel*>(layout->itemAt(1)->widget());
  const QString title=window.windowTitle(),line=first?first->text():QString(),body=second?second->text():QString();
- const bool correct=title==QString::fromUtf8("辅助挂号软件v1.0.0")&&line==QString::fromUtf8("免责说明")&&body.contains(QString::fromUtf8("以医院或官方平台为准"));
+ const bool correct=title==QString::fromUtf8("辅助挂号软件v1.0.1")&&line==QString::fromUtf8("免责说明")&&body.contains(QString::fromUtf8("以医院或官方平台为准"));
  QJsonObject result{{"window_title",title},{"first_line",line},{"disclaimer",body},{"network_attempts",0},{"visible",window.isVisible()},{"branding_matches",correct}};
  if(app.arguments().contains("--screenshot")){if(!window.grab().save("preview.png"))return 4;}
  window.close();QElapsedTimer timer;timer.start();

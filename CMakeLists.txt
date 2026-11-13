@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(AssistedRegistration VERSION 1.1.1 LANGUAGES CXX)
+project(AssistedRegistration VERSION 1.2.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets Network)

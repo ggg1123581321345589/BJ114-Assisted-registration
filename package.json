@@ -1,6 +1,6 @@
 {
   "name": "assisted-registration-desktop",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
   "description": "C++ Qt5 desktop query and manually confirmed appointment assistant",
   "license": "MIT",

@@ -12,6 +12,7 @@ DEFINES += NOMINMAX WIN32_LEAN_AND_MEAN
 win32-msvc*: QMAKE_CXXFLAGS += /utf-8
 contains(TEST_NAME, ^(booking_ui_offline_test|preview_probe)$) {
     QT += gui widgets
+    win32: LIBS += -lws2_32
     # Refuse unexpected business I/O and suppress constructor DNS in offline UI tests.
     SOURCES += $$PWD/offline_broker_guard.cpp $$PROJECT_ROOT/src/native_service.cpp $$PROJECT_ROOT/src/booking_service.cpp
     CURL_ROOT = $$(CURL_ROOT)

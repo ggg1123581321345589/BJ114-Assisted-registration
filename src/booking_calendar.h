@@ -29,22 +29,32 @@ protected:
         painter.setRenderHint(QPainter::Antialiasing);
         const QRectF box = QRectF(rect()).adjusted(2, 2, -2, -2);
         const bool today = date == QDate::currentDate();
-        QColor fill = selected ? QColor(79, 107, 255)
+        QColor fill = selected ? QColor(35, 86, 232)
                                : (underMouse() ? QColor(237, 243, 255) : QColor(Qt::white));
-        if (!isEnabled()) fill = QColor(245, 245, 245);
+        if (!isEnabled() && !selected) fill = QColor(245, 245, 245);
         painter.setBrush(fill);
-        painter.setPen(today ? QPen(QColor(79, 107, 255), 2) : QPen(Qt::NoPen));
+        painter.setPen(selected ? QPen(QColor(16, 54, 167), 2)
+                                : (today ? QPen(QColor(79, 107, 255), 2) : QPen(Qt::NoPen)));
         painter.drawRoundedRect(box, 7, 7);
         QColor ink = date.dayOfWeek() >= 6 ? QColor(235, 65, 69) : QColor(40, 48, 62);
         if (!inDisplayedMonth) ink = QColor(180, 184, 192);
         if (selected) ink = Qt::white;
-        if (!isEnabled()) ink = QColor(170, 170, 170);
+        if (!isEnabled() && !selected) ink = QColor(170, 170, 170);
         painter.setPen(ink);
         QFont numberFont = font();
         numberFont.setPointSizeF(13);
         numberFont.setBold(today || selected);
         painter.setFont(numberFont);
-        painter.drawText(QRect(4, 5, width() - 8, 23), Qt::AlignCenter, QString::number(date.day()));
+        painter.drawText(QRect(4, 5, width() - (selected ? 22 : 8), 23), Qt::AlignCenter, QString::number(date.day()));
+        if (selected) {
+            // Selection is painted independently of keyboard focus or hover.
+            painter.setPen(QPen(Qt::white, 2, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+            QPainterPath check;
+            check.moveTo(width() - 17, 13);
+            check.lineTo(width() - 14, 16);
+            check.lineTo(width() - 9, 10);
+            painter.drawPath(check);
+        }
         QFont doctorFont = font();
         doctorFont.setPointSizeF(8.5);
         painter.setFont(doctorFont);
@@ -135,7 +145,8 @@ public:
             connect(day, &QAbstractButton::clicked, this, [this, day] {
                 if (selected_.contains(day->date)) selected_.remove(day->date);
                 else selected_.insert(day->date);
-                refresh();
+                refreshDaySelection(day);
+                refreshSummary();
                 if (selectionChanged) selectionChanged();
             });
         }
@@ -175,30 +186,40 @@ public:
         QSet<QDate> values;
         for (const auto &date : dates) if (date.isValid()) values.insert(date);
         const bool changed = values != selected_;
+        if (!changed) return;
         selected_ = values;
-        refresh();
-        if (changed && notify && selectionChanged) selectionChanged();
+        refreshSelection();
+        refreshSummary();
+        if (notify && selectionChanged) selectionChanged();
     }
 
     // Replacement semantics prevent another hospital's names leaking into the
     // calendar. Pass accumulated multi-day rows to retain earlier annotations.
     void setDoctorRows(const QJsonArray &rows) {
-        doctors_.clear();
+        QMap<QDate, QStringList> values;
         for (const auto &value : rows) {
             const auto row = value.toObject();
             const QDate date = QDate::fromString(row.value(QStringLiteral("date")).toString(), QStringLiteral("yyyyMMdd"));
             const QString name = row.value(QStringLiteral("doctor_name")).toString().trimmed();
-            if (date.isValid() && !name.isEmpty() && !doctors_[date].contains(name)) doctors_[date].append(name);
+            if (date.isValid() && !name.isEmpty() && !values[date].contains(name)) values[date].append(name);
         }
-        for (auto iterator = doctors_.begin(); iterator != doctors_.end(); ++iterator)
+        for (auto iterator = values.begin(); iterator != values.end(); ++iterator)
             iterator.value().sort(Qt::CaseInsensitive);
-        refresh();
+        if (values == doctors_) return;
+        doctors_ = values;
+        for (auto *day : days_) refreshDayDoctors(day, doctors_.value(day->date));
     }
-    void clearDoctors() { doctors_.clear(); refresh(); }
+    void clearDoctors() { setDoctorRows(QJsonArray{}); }
     QDate displayedMonth() const { return month_; }
     void setDisplayedMonth(QDate date) {
         if (!date.isValid()) return;
-        month_ = QDate(date.year(), date.month(), 1);
+        const QDate displayed(date.year(), date.month(), 1);
+        if (month_ == displayed) {
+            refreshSelection();
+            refreshSummary();
+            return;
+        }
+        month_ = displayed;
         refresh();
     }
 
@@ -223,22 +244,42 @@ private:
         for (int index = 0; index < days_.size(); ++index) {
             auto *day = days_[index];
             day->date = start.addDays(index);
-            day->selected = selected_.contains(day->date);
             day->inDisplayedMonth = day->date.year() == month_.year() && day->date.month() == month_.month();
-            day->doctors = doctors_.value(day->date);
             const QString key = day->date.toString(QStringLiteral("yyyyMMdd"));
             day->setObjectName(QStringLiteral("calendarDay_") + key);
             day->setProperty("calendarDate", key);
-            day->setProperty("calendarSelected", day->selected);
-            day->setProperty("doctorNames", day->doctors);
-            day->setText(day->date.toString(QStringLiteral("yyyy-MM-dd")) + QStringLiteral(" ") + day->doctors.join(QString::fromUtf8("、")));
-            day->setAccessibleName(day->text());
-            day->setAccessibleDescription(day->selected ? QString::fromUtf8("已选择；点击取消") : QString::fromUtf8("未选择；点击选择"));
-            day->setToolTip(day->date.toString(QStringLiteral("yyyy-MM-dd")) + QString::fromUtf8("\n") +
-                            (day->doctors.isEmpty() ? QString::fromUtf8("暂无已查询的医生信息") : day->doctors.join(QString::fromUtf8("、"))) +
-                            QString::fromUtf8("\n点击选择或取消，可跨月多选"));
-            day->update();
+            refreshDaySelection(day, true);
+            refreshDayDoctors(day, doctors_.value(day->date), true);
         }
+        refreshSummary();
+    }
+
+    void refreshDaySelection(BookingCalendarDayButton *day, bool force = false) {
+        const bool selected = selected_.contains(day->date);
+        if (!force && day->selected == selected) return;
+        day->selected = selected;
+        day->setProperty("calendarSelected", selected);
+        day->setAccessibleDescription(selected ? QString::fromUtf8("已选择；点击取消") : QString::fromUtf8("未选择；点击选择"));
+        day->update();
+    }
+
+    void refreshSelection() {
+        for (auto *day : days_) refreshDaySelection(day);
+    }
+
+    void refreshDayDoctors(BookingCalendarDayButton *day, const QStringList &names, bool force = false) {
+        if (!force && day->doctors == names) return;
+        day->doctors = names;
+        day->setProperty("doctorNames", names);
+        day->setText(day->date.toString(QStringLiteral("yyyy-MM-dd")) + QStringLiteral(" ") + names.join(QString::fromUtf8("、")));
+        day->setAccessibleName(day->text());
+        day->setToolTip(day->date.toString(QStringLiteral("yyyy-MM-dd")) + QString::fromUtf8("\n") +
+                        (names.isEmpty() ? QString::fromUtf8("暂无已查询的医生信息") : names.join(QString::fromUtf8("、"))) +
+                        QString::fromUtf8("\n点击选择或取消，可跨月多选"));
+        day->update();
+    }
+
+    void refreshSummary() {
         QStringList dates;
         for (const auto &date : selectedDates()) dates.append(date.toString(QStringLiteral("MM-dd")));
         const QString full = dates.join(QString::fromUtf8("、"));

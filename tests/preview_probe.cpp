@@ -7,7 +7,7 @@
 class UiProbe {
 public:
  static QJsonObject run(const QString &root,const QString &out){
-  Window w(root,false);
+  Window w(root,false,false);
   bool disconnected=true;int disconnectedWorkers=0;for(int slot=0;slot<16;++slot)if(w.queryWorkers_[slot]){disconnected=QObject::disconnect(&w,&Window::work,w.queryWorkers_[slot],&Worker::execute)&&disconnected;++disconnectedWorkers;}
   QJsonArray work,checks;int failed=0;
   auto check=[&](const char *name,bool pass){checks.append(QJsonObject{{"name",QString::fromLatin1(name)},{"pass",pass}});if(!pass)++failed;};
@@ -20,13 +20,18 @@ public:
   check("real_window_visible",w.isVisible());
   check("public_hospital_catalog_loaded",w.hospitals_->rowCount()==308);
   check("worker_execution_disconnected",disconnected&&disconnectedWorkers==w.queryConnectionCount_);
-  check("title_exact_v1_1_1",w.windowTitle()==QString::fromUtf8("辅助挂号软件 v1.1.1"));
+  check("title_exact_v1_2_0",w.windowTitle()==QString::fromUtf8("辅助挂号软件 v1.2.0"));
   check("first_line_is_disclaimer_agreement",first&&first->text()==QString::fromUtf8("免责协议"));
   check("disclaimer_named_label_visible",body&&body->isVisible()&&body->wordWrap()&&body->textFormat()==Qt::PlainText);
   check("disclaimer_has_manual_confirmation_and_official_result",body&&body->text().contains(QString::fromUtf8("人工确认"))&&body->text().contains(QString::fromUtf8("官方平台为准")));
   bool removedOfficialLinkAbsent=true;
   for(auto *label:w.findChildren<QLabel*>())if(label->text().contains(QString::fromUtf8("打开官方页面查看协议 / 订单")))removedOfficialLinkAbsent=false;
   check("removed_official_agreement_order_link_absent",removedOfficialLinkAbsent);
+  check("auto_login_disabled_for_offline_fixture",!w.autoLoginEnabled_&&!w.autoLoginPending_&&!w.autoLoginAttempted_);
+  check("test_session_path_isolated",QStandardPaths::isTestModeEnabled()&&BookingSessionStore::defaultPath().contains(QCoreApplication::applicationName())&&!BookingSessionStore::hasSavedSession());
+  check("department_list_is_readable_single_selection",w.department_->objectName()=="departmentSelector"&&w.department_->selectionMode()==QAbstractItemView::SingleSelection&&w.department_->font().pointSize()>=14);
+  check("refresh_button_is_explicit",w.query_->text()==QString::fromUtf8("刷新号源")&&w.query_->objectName()=="refreshAvailabilityButton");
+  check("parallel_booking_threads_default_and_range",w.bookingParallelThreads_->value()==16&&w.bookingParallelThreads_->minimum()==1&&w.bookingParallelThreads_->maximum()==16);
   check("phone_is_empty",w.phone_->text().isEmpty());
   check("image_code_is_empty",w.imageCode_->text().isEmpty());
   check("sms_code_is_empty",w.smsCode_->text().isEmpty());
@@ -54,7 +59,7 @@ public:
  }
 };
 int main(int argc,char **argv){
- if(qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))qputenv("QT_QPA_PLATFORM","windows");QApplication app(argc,argv);
+ if(qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))qputenv("QT_QPA_PLATFORM","windows");QTemporaryDir isolated; if(!isolated.isValid())return 4; qputenv("APPDATA",isolated.path().toUtf8());qputenv("LOCALAPPDATA",isolated.path().toUtf8());QStandardPaths::setTestModeEnabled(true);QApplication app(argc,argv);QCoreApplication::setOrganizationName("HospitalBookingOfflineTests");QCoreApplication::setApplicationName("preview_"+QFileInfo(isolated.path()).fileName());
  if(argc!=3){QTextStream(stderr)<<"Usage: preview_probe PROJECT_ROOT OUTPUT_JSON"<<Qt::endl;return 2;}
  const auto args=app.arguments();const auto result=UiProbe::run(QDir(args.at(1)).absolutePath(),args.at(2));
  if(!writeJson(args.at(2),result))return 3;const auto bytes=QJsonDocument(result).toJson(QJsonDocument::Compact);fwrite(bytes.constData(),1,bytes.size(),stdout);return result.value("status")==QJsonValue("PASS")?0:1;

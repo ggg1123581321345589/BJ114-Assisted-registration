@@ -280,6 +280,8 @@ inline QJsonObject parseDetail(const QJsonObject &envelope, const Context &conte
             row[QStringLiteral("doctor_name")] = label;
             row[QStringLiteral("doctor_name_raw")] = source.value(QStringLiteral("doctorName")).isString() ? source.value(QStringLiteral("doctorName")) : QJsonValue(QString());
             row[QStringLiteral("doctor_title")] = title;
+            row[QStringLiteral("registration_fee")] = QJsonValue(QJsonValue::Null);
+            row[QStringLiteral("registration_fee_status")] = source.value(QStringLiteral("fcode")).isNull() || source.value(QStringLiteral("fcode")).isUndefined() ? QStringLiteral("not_provided") : QStringLiteral("official_encoded");
             row[QStringLiteral("doctor_label_source")] = name.isEmpty() ? QStringLiteral("doctorTitleName") : QStringLiteral("doctorName");
             row[QStringLiteral("period")] = dutyText(duty.toString());
             row[QStringLiteral("legacy_duty_code")] = duty;

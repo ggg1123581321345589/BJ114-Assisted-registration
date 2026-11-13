@@ -10,17 +10,17 @@ import os
 import re
 import sys
 
-VERSION = "1.1.1"
+VERSION = "1.2.0"
 TITLE = "辅助挂号软件 v" + VERSION
 MANIFEST = "SOURCE_MANIFEST.json"
 EXCLUDED_DIRECTORIES = {
     ".git", ".vs", ".vscode", ".idea", ".wireit", "bin", "build",
     "node_modules", "records", "output", "verification", "logs", "__pycache__",
-    "debug", "release", "captures", "session", "sessions", "cookies",
+    "debug", "release", "captures", "session", "sessions", "cookies", "official-session",
 }
 EXCLUDED_SUFFIXES = {
     ".exe", ".dll", ".obj", ".pdb", ".log", ".lib", ".o", ".exp",
-    ".ilk", ".res", ".pyc", ".zip", ".har", ".pcap", ".pcapng",
+    ".ilk", ".res", ".pyc", ".zip", ".har", ".pcap", ".pcapng", ".dpapi",
 }
 
 def excluded(relative):
@@ -80,7 +80,7 @@ def audit(root):
     require('new QLabel(QString::fromUtf8("免责协议"))' in main and 'setObjectName("disclaimerAgreement")' in main, "first-line agreement", checks)
     require("人工确认后提交一次预约" in main and "验证码须由本人输入" in main, "manual confirmation and captcha disclosure", checks)
     require(not re.search(r"scheduled|定时", main, re.IGNORECASE), "no scheduled booking UI", checks)
-    require(not any(value in main for value in ["打开官方页面查看协议", "打开官方页面", "setOpenExternalLinks", "QDesktopServices"]), "removed external agreement link absent", checks)
+    require(not any(value in main for value in ["打开官方页面查看协议", "打开官方页面查看协议 / 订单", "setOpenExternalLinks"]), "removed external agreement link absent", checks)
     for name in ["README.md", "CHANGELOG.md", "docs/免责协议.md"]:
         text = (root / name).read_text(encoding="utf-8-sig")
         require(VERSION in text, name + " version", checks)

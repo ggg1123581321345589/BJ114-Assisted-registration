@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "version": "1.1.1",
+  "version": "1.2.0",
   "hash_strategy": "git_text_lf_sha256",
   "hash_description": "Git text blobs normalized to LF; binary image bytes preserved. Windows CRLF checkouts are normalized by the audit.",
-  "file_count": 783,
+  "file_count": 788,
   "files": [
     {
       "path": ".gitattributes",
@@ -12,23 +12,23 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 476,
-      "sha256": "81695438d4f3afd195bd8d204188591aa8f94d5baf6728aac6a8f45a380d840b"
+      "bytes": 502,
+      "sha256": "185f94d77a6d145a1363b3b0408716e89f583d6d3dc78909f23ebb34c2270eab"
     },
     {
       "path": "AssistedRegistration.pro",
-      "bytes": 752,
-      "sha256": "65c08d57f5379a0a7ebf896e95c94ffefdc7a7ff38814a1f5da96595758cf268"
+      "bytes": 780,
+      "sha256": "da5180f0178f9e37944d205d481127fdfcdc646202db496f84bd242615270cb4"
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 2051,
-      "sha256": "8ebcd2310603b725b00d2ca45d7b66abb986b7823d062bb636efb8d85abfd5bf"
+      "bytes": 2852,
+      "sha256": "39272fcec482bf17cc2d7ff421957c7f9b49b631a024a0ccbef4c744351e66c3"
     },
     {
       "path": "CMakeLists.txt",
       "bytes": 2910,
-      "sha256": "a5e9666fa3aa51d29849f3c544298d18fe67382681e0079d75ea09ed6d1a9a1d"
+      "sha256": "b6ddf1c4b7c86413ad35f05c8a6e5d2d79055282aec593f2e087cc18057c5a56"
     },
     {
       "path": "LICENSE",
@@ -37,13 +37,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 8039,
-      "sha256": "b3b0287fe14b1c88f7c0850ffbccb1c9e3a9207290da1c4746282437ce729f31"
+      "bytes": 11277,
+      "sha256": "3895e33b892d2dcecf0a76567b82e1423eae35268508227d520d973e003a6b93"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 2231,
-      "sha256": "bfb01c22f6b59c9ba5e5c82b7f35c4a4f808c88f3e424a46effa8f9b9a9499c9"
+      "bytes": 2474,
+      "sha256": "caa057b4188b648aa3782194e008e6cc51fe93938768371dcf1da7c23d9f2d5f"
     },
     {
       "path": "build.cmd",
@@ -67,18 +67,18 @@
     },
     {
       "path": "docs/免责协议.md",
-      "bytes": 2088,
-      "sha256": "120cc699e6609ca93b9e03f89b88fc9cb55be33034b9c3b028d520b6de4c0dcf"
+      "bytes": 2755,
+      "sha256": "b4a7f5b4100897d4a3f53340338243d92521296a42d6905aed74fd502f73610f"
     },
     {
       "path": "package-lock.json",
       "bytes": 21557,
-      "sha256": "31223de156b249f50202101ee83ab788a75eb304e71ee9e8166bc4624d96664a"
+      "sha256": "05f3afc51e2417ee5c6e320ec5febb25e64214e0d23c88c0c8c73a460172c3a6"
     },
     {
       "path": "package.json",
       "bytes": 707,
-      "sha256": "5f9ca436c667e45da8c3cce0fb63903c0da093b106e6c09c7af8862be4ed0dd5"
+      "sha256": "391b7eb159dc3a4d92bba6d5c0348b93166709ec52b2c09d14068d9ef3f3c646"
     },
     {
       "path": "run.cmd",
@@ -177,8 +177,8 @@
     },
     {
       "path": "scripts/check-source-release.py",
-      "bytes": 7586,
-      "sha256": "ce011430a3490e63a91bff697f40a1628120d603b4160dd27766e53e4d3a5a21"
+      "bytes": 7617,
+      "sha256": "3f7b8f421a5cdd0ddb2e8e2ab79487e768d1cd5dd9e61597c6735a2254c73642"
     },
     {
       "path": "src/HospitalAvailabilityNative.pro",
@@ -187,18 +187,23 @@
     },
     {
       "path": "src/booking_calendar.h",
-      "bytes": 13286,
-      "sha256": "99e8b56ebaa9bf836ccf1f509838a6063266f53e404f25667cec9d71522fb07c"
+      "bytes": 14754,
+      "sha256": "f62000f08246f3bdb9ea88a85565fabba5b8674fb14a1f8f0ce74e898c8f5cf8"
     },
     {
       "path": "src/booking_service.cpp",
-      "bytes": 44746,
-      "sha256": "e122cc4444c78fa22f571521084c01d16c7171ed44214d6afe0d4f485c4276d2"
+      "bytes": 68563,
+      "sha256": "2a7f8a166fccb4529edfa5105c5e054a05ccea9e40b8084787f34b74df5985dc"
     },
     {
       "path": "src/booking_service.h",
-      "bytes": 1481,
-      "sha256": "d6defc983d803bd7837b3ed2579b045829609a6cf72cf10ca5730aa176dace22"
+      "bytes": 1949,
+      "sha256": "74c8dcad2220af6aed3088cee66053ee1a8b6f7846cadf1f5da0f3dee0ba0de3"
+    },
+    {
+      "path": "src/booking_session_store.h",
+      "bytes": 12018,
+      "sha256": "9ec75c277e5e4c59276d374046c6a2b3d6ec2af67f6eb6897d0c3ab8efa3d1c3"
     },
     {
       "path": "src/booking_table_tools.h",
@@ -207,8 +212,8 @@
     },
     {
       "path": "src/legacy_availability.h",
-      "bytes": 17677,
-      "sha256": "713ff35473e6f162fb52acb2cc62a8d70435595eadb5a8350275c4cb6d7df24a"
+      "bytes": 17995,
+      "sha256": "6a571fa3fa3f560935fa861c22a4097ca9f33cae53c97d0d0193bce92ac7f231"
     },
     {
       "path": "src/legacy_departments.h",
@@ -217,8 +222,8 @@
     },
     {
       "path": "src/main.cpp",
-      "bytes": 98337,
-      "sha256": "3e4ba049fd52a0e4132daf89c580b2667884145b928c82c8364f24bd18d621dc"
+      "bytes": 119786,
+      "sha256": "cd46a5c1d18fcdd1bcd4402f12484abd14aed6a4e3b8bb0f160e84c14daecaae"
     },
     {
       "path": "src/native_backend.cpp",
@@ -232,8 +237,8 @@
     },
     {
       "path": "src/native_service.cpp",
-      "bytes": 87856,
-      "sha256": "6eb5a4ce3427f72d2b6c365a636f4243a55eb7981ccf2fc1a2d9beecbe6d1226"
+      "bytes": 88214,
+      "sha256": "3859768f7069af817c5fe6611318a03cc6f6325e64f81b3152cc0b1ace067787"
     },
     {
       "path": "src/native_service.h",
@@ -244,6 +249,11 @@
       "path": "src/runtime_paths.h",
       "bytes": 456,
       "sha256": "acb3283ecc2238d33e3e2af32cd7de87204071830fbf2fa25d0e63c46eaf0cd4"
+    },
+    {
+      "path": "tests/LATEST_FEATURE_TESTS.md",
+      "bytes": 2008,
+      "sha256": "0ea81fa2fd27bf27ee75933f849a9c8e4cd6411021afee0f929708e8cddcc3b5"
     },
     {
       "path": "tests/LATEST_OFFLINE_TESTS.md",
@@ -257,13 +267,13 @@
     },
     {
       "path": "tests/booking_ui_offline_test.cpp",
-      "bytes": 18796,
-      "sha256": "f2c704eeabb73b41ea7bd721037fb4a32afc720dc5023f09293e470f3e94fead"
+      "bytes": 22503,
+      "sha256": "b6f500ef0b0d622a45959889e9305215918dc86fd4fce8912757c0b08f5efe3e"
     },
     {
       "path": "tests/build-local.pro",
-      "bytes": 1484,
-      "sha256": "ea96c99ba0729e8739ff7e2a3ba5eb2718a4bb99bedcbe6f5a9e42bdaa9be9e9"
+      "bytes": 1512,
+      "sha256": "fac27044af6abb570143d9775ed3924195616c3d5b58c662c3712a843d070a05"
     },
     {
       "path": "tests/dns_cache_offline_test.cpp",
@@ -274,6 +284,11 @@
       "path": "tests/fixtures/legacy_departments_public.json",
       "bytes": 23406,
       "sha256": "ee11a0713daec99ac28d4b3d8197ff01449783a2ada89712c5b6af96a2fc88f3"
+    },
+    {
+      "path": "tests/latest-features.pro",
+      "bytes": 800,
+      "sha256": "28bdd4a6d512a003c5afcebe7ffb1d3bcbe60d98c16ef341fa5365e952195c89"
     },
     {
       "path": "tests/latest-offline.pro",
@@ -317,8 +332,18 @@
     },
     {
       "path": "tests/preview_probe.cpp",
-      "bytes": 5593,
-      "sha256": "00c2e3482335f3289ed1ce3136a05c7644784b3f8c972213644e3a3d3761feee"
+      "bytes": 6798,
+      "sha256": "9833c42ceea8740facdfe51e7eea258c2e65af78df0a58971df20c7bed99080d"
+    },
+    {
+      "path": "tests/session_store_offline_test.cpp",
+      "bytes": 6888,
+      "sha256": "ec4bb139a920b77f0d5e6958d4333259a3d8bc8305c2d18ad50420266dbe075d"
+    },
+    {
+      "path": "tests/smooth_refresh_offline_test.cpp",
+      "bytes": 18843,
+      "sha256": "5ab3b9c853621fa4d2cc1f2137ab55cabe955c0ef99b7f0a3584051c86889f9a"
     },
     {
       "path": "vendor/jsdom/LICENSE.txt",

@@ -1,6 +1,6 @@
 # 第三方组件说明
 
-适用版本：辅助挂号软件 v1.1.1。
+适用版本：辅助挂号软件 v1.2.0。
 
 项目自身沿用 LICENSE 中的 MIT 许可。第三方内容继续适用其原有许可，不能因本项目使用 MIT 而改写其许可条件。
 
@@ -21,4 +21,6 @@
 
 Qt、libcurl、Node.js、MSVC 与各自依赖不作为 SDK 或二进制随本源码分发。构建或分发可执行程序时，需另行遵守所选版本及链接方式对应的许可、再分发条件和通知义务。不要仅依靠本文件替代组件自身的许可文本。
 
-正式 Windows 运行包另附 Qt、Node、Microsoft C++ 运行库和其他实际依赖，并在 THIRD_PARTY_LICENSES 中保留许可原文与组件来源索引。sm-crypto 的许可文件原名为 LICENCE_MIT，jsbn 为 LICENSE；两者应随依赖保留，不能只依靠包的 license 字段替代原文。
+Windows 运行包另附 Qt、Node、Microsoft C++ 运行库和其他实际依赖，并在 THIRD_PARTY_LICENSES 中保留许可原文与组件来源索引。sm-crypto 的许可文件原名为 LICENCE_MIT，jsbn 为 LICENSE；两者应随依赖保留，不能只依靠包的 license 字段替代原文。
+
+Windows 会话保存调用系统提供的 CurrentUser DPAPI，不将其作为本项目自带加密库重新分发。源码不包含真实账号、会话文件或抓包；组件许可也不构成官方平台账号、数据或服务的使用授权。

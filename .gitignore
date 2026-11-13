@@ -28,6 +28,8 @@ captures/
 session/
 sessions/
 cookies/
+official-session/
+*.dpapi
 *.log
 *.har
 *.pcap

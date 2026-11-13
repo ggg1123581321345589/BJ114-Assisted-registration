@@ -4,7 +4,7 @@ CONFIG -= debug console
 TEMPLATE = app
 TARGET = AssistedRegistration
 SOURCES += src/main.cpp src/native_backend.cpp src/native_service.cpp src/booking_service.cpp
-HEADERS += src/native_backend.h src/native_service.h src/booking_service.h src/booking_calendar.h src/booking_table_tools.h src/legacy_availability.h src/legacy_departments.h src/runtime_paths.h
+HEADERS += src/native_backend.h src/native_service.h src/booking_service.h src/booking_session_store.h src/booking_calendar.h src/booking_table_tools.h src/legacy_availability.h src/legacy_departments.h src/runtime_paths.h
 DEFINES += NOMINMAX WIN32_LEAN_AND_MEAN
 CURL_ROOT = $$(CURL_ROOT)
 !isEmpty(CURL_ROOT) {
